@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e40f0ad38d70624428d69e21dbad49a6, type: 3}
+  m_Name: FlowChartDatabase
+  m_EditorClassIdentifier: 
+  chapters:
+  - {fileID: 11400000, guid: 3f89a6f4df4ae2d498cd6e90c6979e61, type: 2}
+  slotUnknownThumbnail: {fileID: 21300000, guid: 9453c959f07cabf40b9b5cf492cc312a, type: 3}
+  slotHoverMaterial: {fileID: 2100000, guid: f48bdf2de28c18d46864e8e76911e8cc, type: 2}
+  lineActiveMaterial: {fileID: 2100000, guid: a3e8f2b41d65794d8b0e6c7a5e3b9d12, type: 2}
+  lineCurrentBranchMaterial: {fileID: 2100000, guid: ead225900a55e7b49ad0886c0d144c38, type: 2}
+  lineLockedMaterial: {fileID: 2100000, guid: 72f475edd0ae3144db16ac6cf5709dde, type: 2}
+  columnSpacing: 360
+  rowSpacing: 240
+  lineWidth: 4
+  lineCornerRadius: 0
+  slotHoverSound: {fileID: 8300000, guid: 9e78e2acebf3edd4d88830bb1c847e4a, type: 3}
+  slotClickSound: {fileID: 8300000, guid: d860052cbbd9fb04bae082c34782a426, type: 3}

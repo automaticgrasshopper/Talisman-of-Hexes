@@ -1,0 +1,6005 @@
+=== 提取的C#文件内容 ===
+提取时间: Views
+==================================================
+
+
+============================================================
+文件: BaseNavigationPanel.cs
+============================================================
+
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Nova
+{
+    public class BaseNavigationPanel : MonoBehaviour, INavigationPanel
+    {
+        [Header("面板基础设置")]
+        [SerializeField] protected string panelName = "Unnamed Panel";
+        [SerializeField] protected int priority = 10;
+        [SerializeField] protected bool useCustomNavigation = false;
+        [SerializeField] protected GameObject defaultSelection;
+
+        [Header("自动收集设置")]
+        [SerializeField] public bool autoCollectSelectables = true;
+        [SerializeField] public bool includeInactiveInCollection = false;
+
+        // 自动收集的Selectable列表
+        protected List<Selectable> collectedSelectables = new List<Selectable>();
+
+        // 改为 virtual 属性，允许子类重写
+        public virtual string PanelName => panelName;
+        public virtual int Priority => priority;
+        public virtual bool IsActive => gameObject.activeInHierarchy;
+        public virtual bool UseCustomNavigation => useCustomNavigation;
+        public virtual GameObject DefaultSelection => defaultSelection;
+
+        protected virtual void Start()
+        {
+            // 自动收集可交互元素
+            if (autoCollectSelectables)
+            {
+                CollectSelectables();
+            }
+
+            // 设置默认选中对象
+            if (defaultSelection == null && collectedSelectables.Count > 0)
+            {
+                defaultSelection = collectedSelectables[0].gameObject;
+            }
+
+            // 注册到导航管理器
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.RegisterPanel(this);
+            }
+        }
+
+        /// <summary>
+        /// 自动收集所有可交互的UI元素
+        /// </summary>
+        protected virtual void CollectSelectables()
+        {
+            collectedSelectables.Clear();
+
+            // 获取所有子对象中的Selectable组件
+            Selectable[] allSelectables = GetComponentsInChildren<Selectable>(includeInactiveInCollection);
+
+            // 按照在Hierarchy中的顺序排序
+            collectedSelectables = allSelectables
+                .Where(selectable => selectable != null && IsSelectableValid(selectable))
+                .OrderBy(selectable => GetDepth(selectable.transform))
+                .ThenBy(selectable => selectable.transform.GetSiblingIndex())
+                .ToList();
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 自动收集到 {collectedSelectables.Count} 个可交互元素");
+                foreach (var selectable in collectedSelectables)
+                {
+                    Debug.Log($"  - {selectable.gameObject.name} ({selectable.GetType().Name}) - Interactable: {IsSelectableInteractable(selectable)}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检查Selectable是否有效（包括检查Toggle和Slider的特殊情况）
+        /// </summary>
+        protected virtual bool IsSelectableValid(Selectable selectable)
+        {
+            if (selectable == null) return false;
+
+            // 对于Toggle，即使interactable为false，只要游戏对象是激活的，我们也应该考虑
+            if (selectable is Toggle toggle)
+            {
+                return toggle.gameObject.activeInHierarchy;
+            }
+
+            // 对于Slider，同样处理
+            if (selectable is Slider slider)
+            {
+                return slider.gameObject.activeInHierarchy;
+            }
+
+            // 对于其他Selectable，检查interactable和active状态
+            return selectable.interactable && selectable.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>
+        /// 检查Selectable是否可交互
+        /// </summary>
+        protected virtual bool IsSelectableInteractable(Selectable selectable)
+        {
+            if (selectable == null) return false;
+
+            // 对于Toggle和Slider，我们更宽松一些
+            if (selectable is Toggle || selectable is Slider)
+            {
+                return selectable.gameObject.activeInHierarchy;
+            }
+
+            return selectable.interactable && selectable.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>
+        /// 获取Transform在层级中的深度
+        /// </summary>
+        public int GetDepth(Transform transform)
+        {
+            int depth = 0;
+            while (transform.parent != null && transform.parent != this.transform)
+            {
+                depth++;
+                transform = transform.parent;
+            }
+            return depth;
+        }
+
+        protected virtual void OnDestroy()
+        {
+            // 从导航管理器注销
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.UnregisterPanel(this);
+            }
+        }
+
+        public virtual void OnPanelActivated()
+        {
+            // 面板被激活时的逻辑
+        }
+
+        public virtual void OnPanelDeactivated()
+        {
+            // 面板被停用时的逻辑
+        }
+
+        public virtual void HandleCustomNavigation()
+        {
+            // 自定义导航逻辑
+        }
+
+        public virtual bool ShouldIgnoreSubmit()
+        {
+            // 返回是否应该忽略确认键输入
+            return false;
+        }
+
+        // 设置默认选中对象
+        public void SetDefaultSelection(GameObject selection)
+        {
+            defaultSelection = selection;
+        }
+
+        // 设置是否使用自定义导航
+        public void SetUseCustomNavigation(bool useCustom)
+        {
+            useCustomNavigation = useCustom;
+        }
+
+        /// <summary>
+        /// 获取自动收集的Selectable列表（只读）
+        /// </summary>
+        public IReadOnlyList<Selectable> GetCollectedSelectables()
+        {
+            return collectedSelectables.AsReadOnly();
+        }
+
+        /// <summary>
+        /// 手动添加Selectable到列表
+        /// </summary>
+        public void AddSelectable(Selectable selectable)
+        {
+            if (selectable != null && !collectedSelectables.Contains(selectable))
+            {
+                collectedSelectables.Add(selectable);
+            }
+        }
+
+        /// <summary>
+        /// 手动移除Selectable
+        /// </summary>
+        public void RemoveSelectable(Selectable selectable)
+        {
+            if (selectable != null)
+            {
+                collectedSelectables.Remove(selectable);
+            }
+        }
+
+        /// <summary>
+        /// 重新收集Selectable（用于动态添加UI元素的情况）
+        /// </summary>
+        /// <summary>
+        /// 重新收集Selectable（用于动态添加UI元素的情况）
+        /// </summary>
+        public void RefreshSelectables()
+        {
+            if (autoCollectSelectables)
+            {
+                CollectSelectables();
+
+                // 如果是SettingsNavigationPanel，调用特殊刷新
+                if (this is SettingsNavigationPanel settingsPanel)
+                {
+                    // 通过反射调用SettingsNavigationPanel的特殊方法
+                    var method = typeof(SettingsNavigationPanel).GetMethod("ManualRefreshNavigation",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                    method?.Invoke(settingsPanel, null);
+                }
+            }
+        }
+
+
+    }
+}
+
+
+============================================================
+文件: ChoicesNavigationPanel.cs
+============================================================
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+namespace Nova
+{
+    public class ChoicesNavigationPanel : MonoBehaviour, INavigationPanel
+    {
+        [Header("导航设置")]
+        [Tooltip("导航输入冷却时间（秒）")]
+        [SerializeField] private float navigationCooldown = 0.3f;
+        [Tooltip("启用调试日志")]
+        [SerializeField] private bool enableDebugLogs = false;
+
+        [Header("面板设置")]
+        [Tooltip("面板名称")]
+        [SerializeField] private string panelName = "ChoicesPanel";
+        [Tooltip("面板优先级")]
+        [SerializeField] private int priority = PanelPriority.CHOICES;
+        [Tooltip("使用自定义导航")]
+        [SerializeField] private bool useCustomNavigation = true;
+
+        // 私有字段
+        private ChoicesController choicesController;
+        private int currentSelectedIndex = -1;
+        private float lastNavigationTime;
+        private bool isActive = false;
+        private bool usingGamepad = false;
+        private bool isFirstNavigation = true; // 新增：标记是否是第一次导航
+
+        // 按钮管理
+        private List<Button> choiceButtons = new List<Button>();
+        private Button firstButton;
+        private bool buttonsNeedRefresh = true;
+        private bool isPanelVisible = false;
+
+        // 新增：视觉状态管理
+        private bool hasUserNavigated = false; // 用户是否已经进行了导航操作
+        private InputMode currentInputMode = InputMode.KeyboardMouse; // 跟踪当前输入模式
+
+        // INavigationPanel 接口实现
+        public string PanelName => panelName;
+        public int Priority => priority;
+        public bool IsActive => isActive && gameObject.activeInHierarchy;
+        public bool UseCustomNavigation => useCustomNavigation;
+        public GameObject DefaultSelection => firstButton != null ? firstButton.gameObject : null;
+
+        #region Unity生命周期
+        private void Awake()
+        {
+            choicesController = GetComponent<ChoicesController>();
+            if (choicesController == null)
+            {
+                choicesController = FindObjectOfType<ChoicesController>();
+            }
+
+            // 注册到导航管理器
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.RegisterPanel(this);
+                // 订阅输入模式变化事件
+                GamePadNavigationManager.Instance.OnInputModeChanged += OnInputModeChanged;
+            }
+        }
+
+        private void Start()
+        {
+            // 立即开始监控按钮变化
+            if (choicesController != null)
+            {
+                StartCoroutine(MonitorChoiceButtons());
+            }
+        }
+
+        private void Update()
+        {
+            // 只在激活状态且使用手柄时处理输入
+            if (!isActive || !usingGamepad) return;
+
+            UpdateInputState();
+        }
+
+        private void OnEnable()
+        {
+            isActive = true;
+
+            // 标记需要刷新按钮
+            buttonsNeedRefresh = true;
+            isPanelVisible = true;
+            isFirstNavigation = true; // 重置第一次导航标志
+            hasUserNavigated = false; // 重置用户导航标志
+
+            // 获取当前输入模式
+            if (GamePadNavigationManager.Instance != null)
+            {
+                currentInputMode = GamePadNavigationManager.Instance.GetCurrentInputMode();
+                usingGamepad = (currentInputMode == InputMode.Gamepad);
+            }
+
+            // 不再自动选中第一个按钮
+            RefreshChoiceButtons();
+
+            // 只有手柄模式下才清除视觉选中状态
+            if (usingGamepad)
+            {
+                ClearAllVisualSelections();
+            }
+        }
+
+        private void OnDisable()
+        {
+            isActive = false;
+            usingGamepad = false;
+            currentSelectedIndex = -1;
+            isPanelVisible = false;
+            isFirstNavigation = true; // 重置第一次导航标志
+            hasUserNavigated = false; // 重置用户导航标志
+
+            // 新增：清除所有视觉选中状态（所有模式都需要）
+            ClearAllVisualSelections();
+        }
+
+        private void OnDestroy()
+        {
+            // 从导航管理器注销
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.UnregisterPanel(this);
+                GamePadNavigationManager.Instance.OnInputModeChanged -= OnInputModeChanged;
+            }
+
+            StopAllCoroutines();
+        }
+
+        /// <summary>
+        /// 输入模式变化时的回调
+        /// </summary>
+        private void OnInputModeChanged(InputMode newMode)
+        {
+            currentInputMode = newMode;
+            bool wasUsingGamepad = usingGamepad;
+            usingGamepad = (newMode == InputMode.Gamepad);
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 输入模式变化: {newMode}, 使用手柄: {usingGamepad}");
+            }
+
+            // 如果从手柄模式切换到键鼠模式
+            if (wasUsingGamepad && !usingGamepad)
+            {
+                // 清除手柄模式的选中状态，恢复键鼠模式的行为
+                ClearAllVisualSelections();
+                hasUserNavigated = false;
+                isFirstNavigation = true;
+            }
+            // 如果从键鼠模式切换到手柄模式
+            else if (!wasUsingGamepad && usingGamepad)
+            {
+                // 准备手柄导航，但不立即选中
+                hasUserNavigated = false;
+                isFirstNavigation = true;
+                ClearAllVisualSelections();
+            }
+        }
+        #endregion
+
+        #region INavigationPanel 实现
+        /// <summary>
+        /// 面板激活时的处理
+        /// </summary>
+        public void OnPanelActivated()
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 面板激活");
+            }
+
+            isActive = true;
+
+            // 更新输入模式
+            if (GamePadNavigationManager.Instance != null)
+            {
+                currentInputMode = GamePadNavigationManager.Instance.GetCurrentInputMode();
+                usingGamepad = (currentInputMode == InputMode.Gamepad);
+            }
+
+            isPanelVisible = true;
+
+            // 重置导航状态
+            lastNavigationTime = 0f;
+            isFirstNavigation = true; // 重置第一次导航标志
+            hasUserNavigated = false; // 重置用户导航标志
+
+            // 只刷新按钮，不自动选中第一个
+            RefreshChoiceButtons();
+
+            // 只有手柄模式下才清除视觉上的选中状态
+            if (usingGamepad)
+            {
+                ClearAllVisualSelections();
+            }
+        }
+
+        /// <summary>
+        /// 面板停用时的处理
+        /// </summary>
+        public void OnPanelDeactivated()
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 面板停用");
+            }
+
+            isActive = false;
+            usingGamepad = false;
+            currentSelectedIndex = -1;
+            isPanelVisible = false;
+            isFirstNavigation = true; // 重置第一次导航标志
+            hasUserNavigated = false; // 重置用户导航标志
+
+            // 清除所有视觉选中状态
+            ClearAllVisualSelections();
+        }
+
+        /// <summary>
+        /// 处理自定义导航逻辑
+        /// </summary>
+        public void HandleCustomNavigation()
+        {
+            if (!isActive || !usingGamepad) return;
+
+            // 检查失焦情况
+            CheckLostFocus();
+
+            // 处理十字键导航
+            CheckDPadNavigationInput();
+        }
+
+        /// <summary>
+        /// 是否忽略确认键输入
+        /// </summary>
+        public bool ShouldIgnoreSubmit()
+        {
+            return false;
+        }
+        #endregion
+
+        #region 输入处理
+        /// <summary>
+        /// 更新输入状态
+        /// </summary>
+        private void UpdateInputState()
+        {
+            // 检查是否需要刷新按钮
+            if (buttonsNeedRefresh)
+            {
+                RefreshChoiceButtons();
+            }
+        }
+
+        /// <summary>
+        /// 检查十字键导航输入
+        /// </summary>
+        private void CheckDPadNavigationInput()
+        {
+            if (!usingGamepad) return;
+
+            bool canNavigate = Time.unscaledTime - lastNavigationTime > navigationCooldown;
+            if (!canNavigate) return;
+
+            // 检查手柄输入
+            if (Gamepad.current != null)
+            {
+                Vector2 dpad = Gamepad.current.dpad.ReadValue();
+
+                // 处理十字键上
+                if (dpad.y > 0.5f)
+                {
+                    HandleVerticalNavigation(true);
+                    lastNavigationTime = Time.unscaledTime;
+                }
+                // 处理十字键下
+                else if (dpad.y < -0.5f)
+                {
+                    HandleVerticalNavigation(false);
+                    lastNavigationTime = Time.unscaledTime;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理垂直导航
+        /// </summary>
+        private void HandleVerticalNavigation(bool moveUp)
+        {
+            if (choiceButtons.Count == 0) return;
+
+            int newIndex = currentSelectedIndex;
+
+            // 如果是第一次导航，选中第一个选项
+            if (isFirstNavigation)
+            {
+                isFirstNavigation = false;
+                hasUserNavigated = true; // 标记用户已经开始导航
+                newIndex = 0;
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[ChoicesNavigationPanel] 第一次导航，选中第一个选项");
+                }
+            }
+            else
+            {
+                // 如果当前没有选中或选中无效，从第一个开始
+                if (newIndex < 0 || newIndex >= choiceButtons.Count || choiceButtons[newIndex] == null)
+                {
+                    newIndex = 0;
+                }
+
+                // 计算新索引 - 在当前选择按钮内循环
+                if (moveUp)
+                {
+                    newIndex--;
+                    if (newIndex < 0)
+                    {
+                        newIndex = choiceButtons.Count - 1;
+                    }
+                }
+                else
+                {
+                    newIndex++;
+                    if (newIndex >= choiceButtons.Count)
+                    {
+                        newIndex = 0;
+                    }
+                }
+            }
+
+            SelectChoiceButton(newIndex);
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 导航: {(moveUp ? "上" : "下")}, 从 {currentSelectedIndex} 到 {newIndex}");
+            }
+        }
+
+        /// <summary>
+        /// 检查失焦情况
+        /// </summary>
+        private void CheckLostFocus()
+        {
+            if (usingGamepad && currentSelectedIndex >= 0 && hasUserNavigated)
+            {
+                // 检查当前选中的按钮是否仍然有效
+                if (currentSelectedIndex < choiceButtons.Count && choiceButtons[currentSelectedIndex] != null)
+                {
+                    var currentButton = choiceButtons[currentSelectedIndex];
+                    if (currentButton.gameObject.activeInHierarchy && currentButton.interactable)
+                    {
+                        // 检查EventSystem的当前选中对象
+                        var eventSystem = EventSystem.current;
+                        if (eventSystem != null && eventSystem.currentSelectedGameObject != currentButton.gameObject)
+                        {
+                            if (enableDebugLogs)
+                            {
+                                Debug.Log($"[ChoicesNavigationPanel] 检测到失焦，重新选中按钮: {currentSelectedIndex}");
+                            }
+
+                            // 重新选中当前按钮
+                            SelectChoiceButton(currentSelectedIndex);
+                        }
+                    }
+                    else
+                    {
+                        // 按钮无效，回到第一个
+                        ForceRefreshAndSelectFirst();
+                    }
+                }
+                else
+                {
+                    // 索引无效，回到第一个
+                    ForceRefreshAndSelectFirst();
+                }
+            }
+            else if (usingGamepad && choiceButtons.Count > 0 && hasUserNavigated)
+            {
+                // 没有当前选中，回到第一个
+                ForceRefreshAndSelectFirst();
+            }
+            else if (usingGamepad)
+            {
+                // 没有按钮但应该刷新
+                RefreshChoiceButtons();
+            }
+        }
+        #endregion
+
+        #region 按钮管理
+        /// <summary>
+        /// 刷新选择按钮列表
+        /// </summary>
+        public void RefreshChoiceButtons()
+        {
+            choiceButtons.Clear();
+            firstButton = null;
+
+            if (choicesController != null && choicesController.gameObject.activeInHierarchy)
+            {
+                // 获取所有子对象中的按钮
+                Button[] buttons = GetComponentsInChildren<Button>(true);
+                foreach (var button in buttons)
+                {
+                    if (button != null && button.gameObject.activeInHierarchy && button.interactable)
+                    {
+                        choiceButtons.Add(button);
+                        if (firstButton == null)
+                        {
+                            firstButton = button;
+                        }
+                    }
+                }
+            }
+
+            // 重置选中索引，但不自动选中
+            currentSelectedIndex = -1;
+            buttonsNeedRefresh = false;
+
+            // 新增：只有手柄模式下且用户还没有开始导航才清除视觉选中状态
+            if (usingGamepad && !hasUserNavigated)
+            {
+                ClearAllVisualSelections();
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 刷新选择按钮，找到 {choiceButtons.Count} 个按钮, 用户已导航: {hasUserNavigated}, 使用手柄: {usingGamepad}");
+                for (int i = 0; i < choiceButtons.Count; i++)
+                {
+                    Debug.Log($"  - 按钮 {i}: {choiceButtons[i]?.gameObject.name ?? "null"} (活跃: {choiceButtons[i]?.gameObject.activeInHierarchy}, 可交互: {choiceButtons[i]?.interactable})");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 选择指定索引的选择按钮
+        /// </summary>
+        public void SelectChoiceButton(int index)
+        {
+            if (index < 0 || index >= choiceButtons.Count || choiceButtons[index] == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[ChoicesNavigationPanel] 尝试选择无效的按钮索引: {index}, 按钮总数: {choiceButtons.Count}");
+                }
+                return;
+            }
+
+            var button = choiceButtons[index];
+            if (button == null || !button.gameObject.activeInHierarchy || !button.interactable)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[ChoicesNavigationPanel] 按钮无效: {index}, 活跃: {button?.gameObject.activeInHierarchy}, 可交互: {button?.interactable}");
+                }
+                return;
+            }
+
+            // 设置选中对象
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.SetSelectedObject(button.gameObject);
+            }
+            else
+            {
+                var eventSystem = EventSystem.current;
+                if (eventSystem != null)
+                {
+                    eventSystem.SetSelectedGameObject(button.gameObject);
+                }
+            }
+
+            currentSelectedIndex = index;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 选中按钮: {index} - {button.gameObject.name}");
+            }
+        }
+
+        /// <summary>
+        /// 强制选择第一个按钮
+        /// </summary>
+        public void ForceSelectFirstButton()
+        {
+            if (choiceButtons.Count > 0)
+            {
+                SelectChoiceButton(0);
+                isFirstNavigation = false; // 标记已经进行过导航
+                hasUserNavigated = true; // 标记用户已经开始导航
+            }
+            else
+            {
+                // 如果没有按钮，尝试刷新
+                RefreshChoiceButtons();
+                if (choiceButtons.Count > 0)
+                {
+                    SelectChoiceButton(0);
+                    isFirstNavigation = false; // 标记已经进行过导航
+                    hasUserNavigated = true; // 标记用户已经开始导航
+                }
+            }
+        }
+
+        /// <summary>
+        /// 强制刷新并选择第一个按钮
+        /// </summary>
+        public void ForceRefreshAndSelectFirst()
+        {
+            RefreshChoiceButtons();
+            if (choiceButtons.Count > 0)
+            {
+                // 使用协程确保在布局完成后选择
+                StartCoroutine(DelayedSelectFirst());
+            }
+        }
+
+        /// <summary>
+        /// 清除所有按钮的视觉选中状态
+        /// </summary>
+        private void ClearAllVisualSelections()
+        {
+            var eventSystem = EventSystem.current;
+            if (eventSystem != null)
+            {
+                // 清除事件系统的选中状态
+                eventSystem.SetSelectedGameObject(null);
+            }
+
+            // 强制所有按钮退出选中状态
+            foreach (var button in choiceButtons)
+            {
+                if (button != null)
+                {
+                    // 强制按钮退出选中状态
+                    var selectable = button as Selectable;
+                    if (selectable != null)
+                    {
+                        // 使用反射调用DoStateTransition来强制设置为Normal状态
+                        try
+                        {
+                            var method = typeof(Selectable).GetMethod("DoStateTransition",
+                                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            if (method != null)
+                            {
+                                method.Invoke(selectable, new object[] { 0, true }); // 0 = Normal state
+                            }
+                        }
+                        catch (System.Exception e)
+                        {
+                            if (enableDebugLogs)
+                            {
+                                Debug.LogWarning($"[ChoicesNavigationPanel] 清除按钮状态失败: {e.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[ChoicesNavigationPanel] 清除所有视觉选中状态");
+            }
+        }
+        #endregion
+
+        #region 协程管理
+        /// <summary>
+        /// 监控选择按钮变化的协程
+        /// </summary>
+        private IEnumerator MonitorChoiceButtons()
+        {
+            int lastButtonCount = 0;
+            bool lastPanelVisible = false;
+
+            while (true)
+            {
+                yield return new WaitForSeconds(0.1f); // 缩短检查间隔到0.1秒
+
+                // 检查面板可见性变化
+                bool currentPanelVisible = IsPanelActuallyVisible();
+                if (currentPanelVisible != lastPanelVisible)
+                {
+                    buttonsNeedRefresh = true;
+                    lastPanelVisible = currentPanelVisible;
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[ChoicesNavigationPanel] 面板可见性变化: {lastPanelVisible} -> {currentPanelVisible}");
+                    }
+                }
+
+                // 检查按钮数量变化
+                int currentButtonCount = GetCurrentButtonCount();
+
+                // 如果按钮数量发生变化或需要刷新，刷新按钮列表
+                if (currentButtonCount != lastButtonCount || buttonsNeedRefresh)
+                {
+                    RefreshChoiceButtons();
+
+                    // 如果使用手柄且面板激活且用户已经开始导航，立即选中第一个按钮
+                    if (usingGamepad && isActive && choiceButtons.Count > 0 && hasUserNavigated)
+                    {
+                        ForceSelectFirstButton();
+                    }
+
+                    lastButtonCount = currentButtonCount;
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[ChoicesNavigationPanel] 检测到按钮数量变化: {lastButtonCount} -> {currentButtonCount}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取当前按钮数量
+        /// </summary>
+        private int GetCurrentButtonCount()
+        {
+            if (choicesController == null || !choicesController.gameObject.activeInHierarchy)
+                return 0;
+
+            Button[] buttons = GetComponentsInChildren<Button>(true);
+            int count = 0;
+            foreach (var button in buttons)
+            {
+                if (button != null && button.gameObject.activeInHierarchy && button.interactable)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// 检查面板是否实际可见
+        /// </summary>
+        private bool IsPanelActuallyVisible()
+        {
+            if (choicesController == null) return false;
+
+            // 检查是否有任何活跃的选择按钮
+            return choicesController.activeChoiceCount > 0;
+        }
+
+        /// <summary>
+        /// 延迟选择第一个按钮
+        /// </summary>
+        private IEnumerator DelayedSelectFirst()
+        {
+            yield return null; // 等待一帧
+            if (choiceButtons.Count > 0 && choiceButtons[0] != null)
+            {
+                SelectChoiceButton(0);
+                isFirstNavigation = false; // 标记已经进行过导航
+                hasUserNavigated = true; // 标记用户已经开始导航
+            }
+        }
+        #endregion
+
+        #region 公共API
+        /// <summary>
+        /// 获取当前选中的按钮索引
+        /// </summary>
+        public int GetCurrentSelectedIndex()
+        {
+            return currentSelectedIndex;
+        }
+
+        /// <summary>
+        /// 获取当前选中的按钮
+        /// </summary>
+        public Button GetCurrentSelectedButton()
+        {
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < choiceButtons.Count)
+            {
+                return choiceButtons[currentSelectedIndex];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 手动刷新按钮列表
+        /// </summary>
+        [ContextMenu("手动刷新按钮列表")]
+        public void ManualRefreshButtons()
+        {
+            RefreshChoiceButtons();
+        }
+
+        /// <summary>
+        /// 强制重新选中第一个按钮
+        /// </summary>
+        [ContextMenu("强制选中第一个按钮")]
+        public void ManualForceSelectFirst()
+        {
+            ForceRefreshAndSelectFirst();
+        }
+
+        /// <summary>
+        /// 标记需要刷新按钮
+        /// </summary>
+        public void MarkButtonsNeedRefresh()
+        {
+            buttonsNeedRefresh = true;
+        }
+
+        /// <summary>
+        /// 重置第一次导航标志（用于特殊情况需要立即选中的情况）
+        /// </summary>
+        public void ResetFirstNavigationFlag()
+        {
+            isFirstNavigation = true;
+            hasUserNavigated = false;
+        }
+
+        /// <summary>
+        /// 清除所有视觉选中状态（公共方法）
+        /// </summary>
+        [ContextMenu("清除视觉选中状态")]
+        public void ManualClearVisualSelections()
+        {
+            ClearAllVisualSelections();
+        }
+
+        /// <summary>
+        /// 获取当前输入模式
+        /// </summary>
+        public InputMode GetCurrentInputMode()
+        {
+            return currentInputMode;
+        }
+        #endregion
+
+        #region 调试方法
+        [ContextMenu("打印当前状态")]
+        public void PrintCurrentStatus()
+        {
+            Debug.Log($"[ChoicesNavigationPanel] 状态报告:");
+            Debug.Log($"- 按钮总数: {choiceButtons.Count}");
+            Debug.Log($"- 当前选中索引: {currentSelectedIndex}");
+            Debug.Log($"- 活动状态: {isActive}");
+            Debug.Log($"- 使用手柄: {usingGamepad}");
+            Debug.Log($"- 输入模式: {currentInputMode}");
+            Debug.Log($"- 需要刷新: {buttonsNeedRefresh}");
+            Debug.Log($"- 面板可见: {isPanelVisible}");
+            Debug.Log($"- 第一次导航: {isFirstNavigation}");
+            Debug.Log($"- 用户已导航: {hasUserNavigated}");
+            Debug.Log($"- ChoicesController: {(choicesController != null ? "已找到" : "未找到")}");
+            Debug.Log($"- 活动选择数量: {(choicesController != null ? choicesController.activeChoiceCount : 0)}");
+
+            for (int i = 0; i < choiceButtons.Count; i++)
+            {
+                string status = (i == currentSelectedIndex) ? "[选中]" : "";
+                Debug.Log($"- 按钮 {i}: {choiceButtons[i]?.gameObject.name ?? "null"} {status} (活跃: {choiceButtons[i]?.gameObject.activeInHierarchy}, 可交互: {choiceButtons[i]?.interactable})");
+            }
+        }
+        #endregion
+    }
+}
+
+
+============================================================
+文件: GamePadNavigationManager.cs
+============================================================
+
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+namespace Nova
+{
+    // 面板优先级定义
+    [System.Serializable]
+    public class PanelPriority
+    {
+        public const int MAIN_MENU = 10;      // 主界面 
+        public const int SETTINGS = 50;       // 设置界面
+        public const int SAVE_LOAD = 100;      // 存档界面
+        public const int HELP = 60;           // 帮助界面
+        public const int LOG = 100;           // 回看日志界面
+        public const int NOTIFICATION = 1000; // 通知界面
+        public const int MINIGAME = 20;       // 小游戏界面
+        public const int CHOICES = 20;        // 选择界面
+        public const int SELECT_TITLE = 200;        // 选择界面
+    }
+
+    // 导航面板接口
+    public interface INavigationPanel
+    {
+        string PanelName { get; }
+        int Priority { get; }
+        bool IsActive { get; }
+        bool UseCustomNavigation { get; }
+        GameObject DefaultSelection { get; }
+        void OnPanelActivated();
+        void OnPanelDeactivated();
+        void HandleCustomNavigation();
+        bool ShouldIgnoreSubmit();
+    }
+
+    // 输入模式
+    public enum InputMode
+    {
+        KeyboardMouse,
+        Gamepad
+    }
+
+    public class GamePadNavigationManager : MonoBehaviour
+    {
+        #region Singleton
+        private static GamePadNavigationManager _instance;
+        public static GamePadNavigationManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindObjectOfType<GamePadNavigationManager>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("GamePadNavigationManager");
+                        _instance = go.AddComponent<GamePadNavigationManager>();
+                        DontDestroyOnLoad(go);
+                    }
+                }
+                return _instance;
+            }
+        }
+        #endregion
+
+        [Header("手柄导航设置")]
+        [Tooltip("初始选中的UI对象")]
+        [SerializeField] private GameObject firstSelectedObject;
+        [Tooltip("启动时自动启用手柄导航")]
+        [SerializeField] private bool autoEnableOnStart = true;
+        [Tooltip("选中对象的延迟时间（秒）")]
+        [SerializeField] private float selectionDelay = 0.1f;
+
+        [Header("CanvasGroup 处理")]
+        [Tooltip("跳过CanvasGroup交互性检查")]
+        [SerializeField] private bool bypassCanvasGroupCheck = true;
+        [Tooltip("自动启用CanvasGroup的交互性")]
+        [SerializeField] private bool autoEnableCanvasGroup = true;
+
+        [Header("高亮显示修复")]
+        [Tooltip("强制保持高亮状态")]
+        [SerializeField] private bool forceHighlightState = true;
+        [Tooltip("使用通用高亮方法（适用于Toggle和Slider）")]
+        [SerializeField] private bool useUniversalHighlight = true;
+
+        [Header("导航系统修复")]
+        [Tooltip("启用手柄导航")]
+        [SerializeField] private bool enableNavigation = true;
+        [Tooltip("导航输入冷却时间（秒）")]
+        [SerializeField] private float navigationCooldown = 0.1f;
+
+        [Header("布局组兼容性")]
+        [Tooltip("等待布局重建完成后再设置选中对象")]
+        [SerializeField] private bool waitForLayoutRebuild = true;
+        [Tooltip("最大重试尝试次数")]
+        [SerializeField] private int maxRetryAttempts = 3;
+
+        [Header("输入模式设置")]
+        [Tooltip("手柄输入优先于鼠标输入")]
+        [SerializeField] private bool gamepadPriority = true;
+        [Tooltip("启用时重置选中状态")]
+        [SerializeField] private bool resetSelectionOnEnable = true;
+
+        [Header("UI元素兼容性")]
+        [Tooltip("支持Toggle组件")]
+        [SerializeField] private bool supportToggle = true;
+        [Tooltip("支持Slider组件")]
+        [SerializeField] private bool supportSlider = true;
+
+        [Header("防抖和快速点击保护")]
+        [Tooltip("启用防抖保护，防止快速连续点击")]
+        [SerializeField] private bool enableDebounceProtection = true;
+        [Tooltip("防抖时间（秒）- 在此时间内重复点击被视为一次")]
+        [SerializeField] private float debounceTime = 0.3f;
+        [Tooltip("快速点击保护时间（秒）- 防止UI状态未稳定时重复操作")]
+        [SerializeField] private float rapidClickProtectionTime = 0.5f;
+        [Tooltip("强制保持选中状态的最小时间（秒）")]
+        [SerializeField] private float minSelectionHoldTime = 0.2f;
+
+        [Header("调试设置")]
+        [Tooltip("启用调试日志")]
+        [SerializeField] public bool enableDebugLogs = false; // 默认关闭调试日志
+
+        // 私有字段
+        private bool usingGamepad;
+        private bool wasGamepadConnected;
+        private GameObject currentSelectedObject;
+        private EventSystem eventSystem;
+        private float lastNavigationTime;
+        private bool isNavigating;
+        private bool isInteractingWithUI = false;
+        private bool shouldIgnoreSubmit = false;
+        private GameObject lastSelectedObject;
+
+        // 防抖和快速点击保护
+        private float lastInteractionTime = 0f;
+        private bool isInDebouncePeriod = false;
+        private bool isInRapidClickProtection = false;
+        private Coroutine debounceCoroutine;
+        private Coroutine rapidClickProtectionCoroutine;
+        private Coroutine selectionHoldCoroutine;
+        private string lastInteractedObjectName = "";
+
+        // 面板管理
+        private List<INavigationPanel> registeredPanels = new List<INavigationPanel>();
+        private INavigationPanel currentActivePanel;
+        private int retryCount;
+        private UIType currentUIType;
+
+        // UI类型检测
+        private enum UIType { Button, Toggle, Slider, Other }
+
+        // 新增：输入模式事件
+        private InputMode currentInputMode = InputMode.KeyboardMouse;
+        public System.Action<InputMode> OnInputModeChanged;
+
+        private void Awake()
+        {
+            // 单例初始化
+            if (_instance != null && _instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
+
+            // 延迟获取 EventSystem，避免执行顺序问题
+            StartCoroutine(DelayedAwake());
+        }
+
+        private IEnumerator DelayedAwake()
+        {
+            // 等待一帧，确保 EventSystem 已经初始化
+            yield return null;
+
+            eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                eventSystem = FindObjectOfType<EventSystem>();
+                if (eventSystem == null)
+                {
+                    Debug.LogError("场景中没有 EventSystem! 请添加 EventSystem 组件");
+                }
+                else
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 找到 EventSystem: {eventSystem.gameObject.name}");
+                    }
+                }
+            }
+            else
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 使用当前 EventSystem: {eventSystem.gameObject.name}");
+                }
+            }
+
+            // 初始化最后选中的对象
+            lastSelectedObject = firstSelectedObject;
+
+            // 预定义面板优先级
+            InitializeDefaultPanels();
+        }
+
+        /// <summary>
+        /// 初始化默认面板配置
+        /// </summary>
+        private void InitializeDefaultPanels()
+        {
+            // 这里可以预定义一些面板配置，实际使用时通过RegisterPanel动态注册
+            if (enableDebugLogs)
+            {
+                Debug.Log("[GamePadNavigationManager] 初始化默认面板配置");
+            }
+        }
+
+        private void Start()
+        {
+            // 检查第一个选中对象
+            if (firstSelectedObject == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning("[GamePadNavigationManager] 第一个选中对象未设置，将尝试自动查找");
+                }
+
+                // 尝试自动查找一个合适的默认选中对象
+                firstSelectedObject = FindDefaultSelectable();
+
+                if (firstSelectedObject != null)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 自动找到默认选中对象: {firstSelectedObject.name}");
+                    }
+                }
+                else
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.LogWarning("[GamePadNavigationManager] 无法自动找到默认选中对象，请在Inspector中手动设置");
+                    }
+                }
+            }
+
+            if (autoEnableOnStart)
+            {
+                EnableGamepadNavigation();
+            }
+        }
+
+        /// <summary>
+        /// 尝试自动查找一个合适的默认选中对象
+        /// </summary>
+        private GameObject FindDefaultSelectable()
+        {
+            // 查找场景中的第一个按钮
+            Button firstButton = FindObjectOfType<Button>();
+            if (firstButton != null)
+            {
+                return firstButton.gameObject;
+            }
+
+            // 如果没有按钮，查找其他可选中对象
+            Selectable firstSelectable = FindObjectOfType<Selectable>();
+            if (firstSelectable != null)
+            {
+                return firstSelectable.gameObject;
+            }
+
+            return null;
+        }
+
+        private void OnEnable()
+        {
+            if (resetSelectionOnEnable)
+            {
+                retryCount = 0;
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 管理器启用，准备重置选中状态");
+                }
+
+                if (autoEnableOnStart)
+                {
+                    StartCoroutine(DelayedEnable());
+                }
+            }
+        }
+
+        private void OnDisable()
+        {
+            DisableGamepadNavigation();
+            StopAllProtectionCoroutines();
+        }
+
+        private void OnDestroy()
+        {
+            DisableGamepadNavigation();
+            StopAllProtectionCoroutines();
+
+            // 停止所有可能正在运行的协程
+            StopAllCoroutines();
+
+            registeredPanels.Clear();
+
+            // 清理单例引用
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+        }
+
+        #region 输入模式管理
+        /// <summary>
+        /// 获取当前输入模式
+        /// </summary>
+        public InputMode GetCurrentInputMode()
+        {
+            return currentInputMode;
+        }
+
+        /// <summary>
+        /// 设置输入模式
+        /// </summary>
+        private void SetInputMode(InputMode newMode)
+        {
+            if (currentInputMode != newMode)
+            {
+                InputMode oldMode = currentInputMode;
+                currentInputMode = newMode;
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 输入模式改变: {oldMode} -> {newMode}");
+                }
+
+                // 触发输入模式改变事件
+                OnInputModeChanged?.Invoke(newMode);
+            }
+        }
+
+        /// <summary>
+        /// 强制设置输入模式
+        /// </summary>
+        public void ForceSetInputMode(InputMode mode)
+        {
+            SetInputMode(mode);
+
+            if (mode == InputMode.Gamepad)
+            {
+                usingGamepad = true;
+                OnGamepadActivated();
+            }
+            else
+            {
+                usingGamepad = false;
+                OnGamepadDeactivated();
+            }
+        }
+        #endregion
+
+        #region 面板管理
+        /// <summary>
+        /// 注册导航面板
+        /// </summary>
+        public void RegisterPanel(INavigationPanel panel)
+        {
+            if (panel == null) return;
+
+            if (!registeredPanels.Contains(panel))
+            {
+                registeredPanels.Add(panel);
+
+                // 按优先级排序
+                registeredPanels.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 注册面板: {panel.PanelName}, 优先级: {panel.Priority}, 总面板数: {registeredPanels.Count}");
+                }
+
+                // 如果这是第一个面板或者优先级更高，激活它
+                UpdateActivePanel();
+            }
+        }
+
+        /// <summary>
+        /// 注销导航面板
+        /// </summary>
+        public void UnregisterPanel(INavigationPanel panel)
+        {
+            if (panel != null && registeredPanels.Contains(panel))
+            {
+                registeredPanels.Remove(panel);
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 注销面板: {panel.PanelName}, 剩余面板数: {registeredPanels.Count}");
+                }
+
+                // 如果注销的是当前活动面板，更新活动面板
+                if (currentActivePanel == panel)
+                {
+                    UpdateActivePanel();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 更新当前活动面板
+        /// </summary>
+        public void UpdateActivePanel()
+        {
+            INavigationPanel newActivePanel = null;
+
+            // 找到优先级最高的活动面板
+            foreach (var panel in registeredPanels)
+            {
+                if (panel.IsActive)
+                {
+                    newActivePanel = panel;
+                    break;
+                }
+            }
+
+            // 如果活动面板发生变化
+            if (newActivePanel != currentActivePanel)
+            {
+                // 停用旧面板
+                if (currentActivePanel != null)
+                {
+                    currentActivePanel.OnPanelDeactivated();
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 停用面板: {currentActivePanel.PanelName}");
+                    }
+                }
+
+                // 激活新面板
+                currentActivePanel = newActivePanel;
+                if (currentActivePanel != null)
+                {
+                    currentActivePanel.OnPanelActivated();
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 激活面板: {currentActivePanel.PanelName}, 优先级: {currentActivePanel.Priority}");
+                    }
+
+                    // 延迟设置新面板的默认选中对象
+                    StartCoroutine(DelayedPanelSelection());
+                }
+                else
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 没有活动面板");
+                    }
+                }
+            }
+        }
+
+        private System.Collections.IEnumerator DelayedPanelSelection()
+        {
+            yield return null; // 等待一帧确保UI布局完成
+
+            if (usingGamepad && currentActivePanel != null && currentActivePanel.DefaultSelection != null)
+            {
+                SetSelectedObject(currentActivePanel.DefaultSelection);
+            }
+        }
+
+        /// <summary>
+        /// 强制激活指定面板
+        /// </summary>
+        public void ActivatePanel(INavigationPanel panel)
+        {
+            if (panel != null && panel.IsActive)
+            {
+                // 暂时将该面板移到列表前面（最高优先级）
+                registeredPanels.Remove(panel);
+                registeredPanels.Insert(0, panel);
+                UpdateActivePanel();
+            }
+        }
+
+        /// <summary>
+        /// 获取当前活动面板
+        /// </summary>
+        public INavigationPanel GetCurrentActivePanel()
+        {
+            return currentActivePanel;
+        }
+
+        /// <summary>
+        /// 检查指定面板是否是当前活动面板
+        /// </summary>
+        public bool IsPanelActive(INavigationPanel panel)
+        {
+            return currentActivePanel == panel;
+        }
+        #endregion
+
+        #region 核心导航功能
+        public void EnableGamepadNavigation()
+        {
+            retryCount = 0;
+            CheckGamepadConnection();
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 启用手柄导航");
+            }
+        }
+
+        public void DisableGamepadNavigation()
+        {
+            usingGamepad = false;
+            OnGamepadDeactivated();
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 禁用手柄导航");
+            }
+        }
+
+        private void Update()
+        {
+            CheckGamepadConnection();
+
+            // 更新活动面板状态
+            UpdateActivePanel();
+
+            // 如果当前有活动面板且使用自定义导航，让面板处理自己的导航逻辑
+            if (currentActivePanel != null && currentActivePanel.UseCustomNavigation)
+            {
+                currentActivePanel.HandleCustomNavigation();
+                return;
+            }
+
+            // 否则使用默认导航逻辑
+            CheckGamepadInput();
+
+            // 如果当前没有选中对象，但应该有一个，则重新设置
+            if (usingGamepad && eventSystem != null &&
+                eventSystem.currentSelectedGameObject == null &&
+                currentSelectedObject != null && !isNavigating && !isInteractingWithUI &&
+                !isInDebouncePeriod && !isInRapidClickProtection)
+            {
+                if (retryCount < maxRetryAttempts)
+                {
+                    retryCount++;
+                    SetSelectedObject(currentSelectedObject);
+
+                    if (enableDebugLogs && retryCount > 1)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 重新尝试设置选中对象，尝试次数: {retryCount}");
+                    }
+                }
+                else
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.LogWarning($"[GamePadNavigationManager] 超过最大重试次数 ({maxRetryAttempts})，停止尝试设置选中对象");
+                    }
+                    retryCount = 0;
+                }
+            }
+            else if (usingGamepad && eventSystem != null &&
+                     eventSystem.currentSelectedGameObject != null)
+            {
+                retryCount = 0;
+
+                // 更新当前选中对象
+                GameObject newSelected = eventSystem.currentSelectedGameObject;
+                if (newSelected != currentSelectedObject)
+                {
+                    currentSelectedObject = newSelected;
+
+                    // 更新最后选中的对象
+                    if (IsObjectSelectable(newSelected))
+                    {
+                        lastSelectedObject = newSelected;
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"[GamePadNavigationManager] 更新最后选中对象: {newSelected.name}");
+                        }
+                    }
+
+                    currentUIType = GetUIType(currentSelectedObject);
+                    isInteractingWithUI = false;
+                    shouldIgnoreSubmit = false;
+                }
+
+                // 持续确保高亮状态（仅在非导航状态下）
+                if (forceHighlightState && currentSelectedObject != null && !isNavigating)
+                {
+                    EnsureHighlightState(currentSelectedObject);
+                }
+            }
+
+            // 检查鼠标输入，如果检测到鼠标输入且不是手柄优先模式，切换到键鼠模式
+            if (gamepadPriority && usingGamepad && Mouse.current != null)
+            {
+                Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+                if (mouseDelta.magnitude > 0.1f || Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 检测到鼠标输入，切换到键鼠模式");
+                    }
+                    usingGamepad = false;
+                    OnGamepadDeactivated();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检查手柄输入（导航输入和按钮输入）
+        /// </summary>
+        private void CheckGamepadInput()
+        {
+            if (Gamepad.current == null) return;
+
+            // 检查导航输入（十字键或左摇杆）
+            Vector2 dpad = Gamepad.current.dpad.ReadValue();
+            Vector2 leftStick = Gamepad.current.leftStick.ReadValue();
+            bool hasNavigationInput = dpad != Vector2.zero || leftStick.magnitude > 0.2f;
+
+            // 检查按钮输入
+            bool anyButtonPressed = Gamepad.current.aButton.wasPressedThisFrame ||
+                                   Gamepad.current.bButton.wasPressedThisFrame ||
+                                   Gamepad.current.xButton.wasPressedThisFrame ||
+                                   Gamepad.current.yButton.wasPressedThisFrame ||
+                                   Gamepad.current.startButton.wasPressedThisFrame ||
+                                   Gamepad.current.selectButton.wasPressedThisFrame;
+
+            bool hasAnyGamepadInput = hasNavigationInput || anyButtonPressed;
+
+            // 检查是否在冷却时间内
+            bool canNavigate = Time.unscaledTime - lastNavigationTime > navigationCooldown;
+
+            if (hasAnyGamepadInput)
+            {
+                // 如果当前不是使用手柄模式但检测到手柄输入，切换到手柄模式
+                if (!usingGamepad && gamepadPriority)
+                {
+                    usingGamepad = true;
+                    OnGamepadActivated();
+                }
+
+                // 如果有任何手柄输入且当前没有选中对象，立即选中对象
+                if (usingGamepad && (eventSystem.currentSelectedGameObject == null ||
+                    !IsObjectSelectable(eventSystem.currentSelectedGameObject)) &&
+                    !isInteractingWithUI && !isInDebouncePeriod)
+                {
+                    GameObject targetObject = currentActivePanel?.DefaultSelection ?? firstSelectedObject;
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 检测到手柄输入，立即选中对象: {targetObject?.name ?? "未设置"}");
+                    }
+
+                    if (targetObject != null)
+                    {
+                        SetSelectedObject(targetObject);
+                    }
+                }
+
+                // 如果是导航输入且不在冷却时间，标记为导航状态
+                if (hasNavigationInput && canNavigate && enableNavigation)
+                {
+                    isNavigating = true;
+                    lastNavigationTime = Time.unscaledTime;
+                    isInteractingWithUI = false;
+                    shouldIgnoreSubmit = false;
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 检测到导航输入: DPad={dpad}, LeftStick={leftStick}");
+                    }
+
+                    // 设置一个短暂的导航状态，然后重置
+                    StartCoroutine(ResetNavigationState());
+                }
+
+                // 检查是否在交互性UI元素上按下按钮
+                if (anyButtonPressed && currentSelectedObject != null)
+                {
+                    // 新增：防抖检查
+                    if (enableDebounceProtection && IsInDebouncePeriod(currentSelectedObject))
+                    {
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"[GamePadNavigationManager] 防抖保护：忽略快速重复点击 {currentSelectedObject.name}");
+                        }
+                        return; // 在防抖期内，忽略此次点击
+                    }
+
+                    UIType uiType = GetUIType(currentSelectedObject);
+
+                    // 对于Toggle和Slider，标记为正在交互
+                    if (uiType == UIType.Toggle || uiType == UIType.Slider)
+                    {
+                        // 新增：开始防抖保护
+                        StartDebounceProtection();
+
+                        // 新增：开始快速点击保护
+                        StartRapidClickProtection();
+
+                        // 新增：强制保持选中状态
+                        StartSelectionHoldProtection();
+
+                        isInteractingWithUI = true;
+
+                        // 更新最后选中的对象
+                        lastSelectedObject = currentSelectedObject;
+
+                        // 对于Slider，按下确认键时忽略提交，保持选中状态
+                        if (uiType == UIType.Slider)
+                        {
+                            shouldIgnoreSubmit = true;
+                            if (enableDebugLogs)
+                            {
+                                Debug.Log($"[GamePadNavigationManager] 在Slider上按下确认键，忽略提交操作，保持选中状态");
+                            }
+                        }
+
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"[GamePadNavigationManager] 检测到在 {uiType} 上的按钮输入，保持选中状态");
+                        }
+                    }
+                    else if (uiType == UIType.Button)
+                    {
+                        // 按钮点击后也记住选中状态
+                        lastSelectedObject = currentSelectedObject;
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"[GamePadNavigationManager] 按钮点击后记住选中状态: {currentSelectedObject.name}");
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设置选中的对象
+        /// </summary>
+        public void SetSelectedObject(GameObject selectedObject)
+        {
+            if ((isInDebouncePeriod || isInRapidClickProtection) &&
+    (currentUIType == UIType.Toggle || currentUIType == UIType.Slider) &&
+    selectedObject != currentSelectedObject)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 保护期内保持当前选中对象: {currentSelectedObject?.name ?? "null"}");
+                }
+                return;
+            }
+            // 检查 EventSystem 是否存在
+            if (eventSystem == null)
+            {
+                eventSystem = EventSystem.current;
+                if (eventSystem == null)
+                {
+                    Debug.LogError("[GamePadNavigationManager] 无法找到 EventSystem!");
+                    return;
+                }
+            }
+
+            if (selectedObject != null && eventSystem != null)
+            {
+                if (!selectedObject.activeInHierarchy)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.LogWarning($"[GamePadNavigationManager] 尝试选中的对象 {selectedObject.name} 未激活，无法选中");
+                    }
+                    return;
+                }
+
+                // 检查UI元素类型和交互性
+                UIType uiType = GetUIType(selectedObject);
+                bool isInteractable = IsObjectSelectable(selectedObject);
+
+                if (!isInteractable)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.LogWarning($"[GamePadNavigationManager] 对象 {selectedObject.name} 不可交互，类型: {uiType}");
+                    }
+                    return;
+                }
+
+                // 设置选中对象
+                eventSystem.SetSelectedGameObject(selectedObject);
+                currentSelectedObject = selectedObject;
+                currentUIType = uiType;
+
+                // 更新最后选中的对象
+                lastSelectedObject = selectedObject;
+
+                // 设置新对象时重置交互状态
+                isInteractingWithUI = false;
+                shouldIgnoreSubmit = false;
+
+                // 根据UI类型处理选中状态
+                switch (uiType)
+                {
+                    case UIType.Button:
+                        var button = selectedObject.GetComponent<Button>();
+                        if (button != null)
+                        {
+                            button.Select();
+                            if (forceHighlightState)
+                            {
+                                EnsureHighlightState(selectedObject);
+                            }
+                        }
+                        break;
+                    case UIType.Toggle:
+                        var toggle = selectedObject.GetComponent<Toggle>();
+                        if (toggle != null)
+                        {
+                            toggle.Select();
+                            // Toggle选中后强制保持高亮状态
+                            if (forceHighlightState && useUniversalHighlight)
+                            {
+                                EnsureToggleHighlight(toggle);
+                                // 启动协程持续确保Toggle高亮
+                                StartCoroutine(KeepToggleHighlighted(toggle));
+                            }
+                        }
+                        break;
+                    case UIType.Slider:
+                        var slider = selectedObject.GetComponent<Slider>();
+                        if (slider != null)
+                        {
+                            slider.Select();
+                            if (forceHighlightState && useUniversalHighlight)
+                            {
+                                EnsureSliderHighlight(slider);
+                            }
+                        }
+                        break;
+                    default:
+                        // 对于其他Selectable类型
+                        var selectable = selectedObject.GetComponent<Selectable>();
+                        if (selectable != null)
+                        {
+                            selectable.Select();
+                            if (forceHighlightState)
+                            {
+                                EnsureHighlightState(selectedObject);
+                            }
+                        }
+                        break;
+                }
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 已选中对象: {selectedObject.name} (UI类型: {uiType})");
+                }
+
+                StartCoroutine(ValidateSelection(selectedObject));
+            }
+            else
+            {
+                if (enableDebugLogs)
+                {
+                    if (selectedObject == null)
+                    {
+                        Debug.LogError("[GamePadNavigationManager] selectedObject 未设置!");
+                    }
+                    if (eventSystem == null)
+                    {
+                        Debug.LogError("[GamePadNavigationManager] EventSystem 为 null!");
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region 保护机制
+        /// <summary>
+        /// 检查是否处于防抖期内
+        /// </summary>
+        private bool IsInDebouncePeriod(GameObject currentObject)
+        {
+            if (!enableDebounceProtection) return false;
+
+            float timeSinceLastInteraction = Time.unscaledTime - lastInteractionTime;
+            bool isSameObject = currentObject.name == lastInteractedObjectName;
+
+            // 如果是同一个对象且在防抖时间内，则处于防抖期
+            return timeSinceLastInteraction < debounceTime && isSameObject;
+        }
+
+        /// <summary>
+        /// 开始防抖保护
+        /// </summary>
+        private void StartDebounceProtection()
+        {
+            if (!enableDebounceProtection) return;
+
+            lastInteractionTime = Time.unscaledTime;
+            lastInteractedObjectName = currentSelectedObject != null ? currentSelectedObject.name : "";
+            isInDebouncePeriod = true;
+
+            // 停止之前的防抖协程
+            if (debounceCoroutine != null)
+            {
+                StopCoroutine(debounceCoroutine);
+            }
+
+            // 启动新的防抖协程
+            debounceCoroutine = StartCoroutine(DebounceCoroutine());
+        }
+
+        private IEnumerator DebounceCoroutine()
+        {
+            yield return new WaitForSeconds(debounceTime);
+            isInDebouncePeriod = false;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 防抖保护期结束");
+            }
+        }
+
+        private void StartRapidClickProtection()
+        {
+            isInRapidClickProtection = true;
+
+            // 停止之前的保护协程
+            if (rapidClickProtectionCoroutine != null)
+            {
+                StopCoroutine(rapidClickProtectionCoroutine);
+            }
+
+            // 启动新的保护协程
+            rapidClickProtectionCoroutine = StartCoroutine(RapidClickProtectionCoroutine());
+        }
+
+        private IEnumerator RapidClickProtectionCoroutine()
+        {
+            yield return new WaitForSeconds(rapidClickProtectionTime);
+            isInRapidClickProtection = false;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 快速点击保护期结束");
+            }
+        }
+
+        private void StartSelectionHoldProtection()
+        {
+            // 停止之前的保护协程
+            if (selectionHoldCoroutine != null)
+            {
+                StopCoroutine(selectionHoldCoroutine);
+            }
+
+            // 启动新的保护协程
+            selectionHoldCoroutine = StartCoroutine(SelectionHoldCoroutine());
+        }
+
+        private IEnumerator SelectionHoldCoroutine()
+        {
+            float startTime = Time.unscaledTime;
+
+            // 在最小保持时间内，强制保持当前选中状态
+            while (Time.unscaledTime - startTime < minSelectionHoldTime)
+            {
+                if (currentSelectedObject != null && eventSystem != null)
+                {
+                    // 确保当前对象保持选中状态
+                    if (eventSystem.currentSelectedGameObject != currentSelectedObject)
+                    {
+                        eventSystem.SetSelectedGameObject(currentSelectedObject);
+
+                        if (enableDebugLogs)
+                        {
+                            Debug.Log($"[GamePadNavigationManager] 强制保持选中状态: {currentSelectedObject.name}");
+                        }
+                    }
+                }
+                yield return null;
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 选中状态保持保护期结束");
+            }
+        }
+
+        /// <summary>
+        /// 停止所有保护协程
+        /// </summary>
+        private void StopAllProtectionCoroutines()
+        {
+            if (debounceCoroutine != null)
+            {
+                StopCoroutine(debounceCoroutine);
+                debounceCoroutine = null;
+            }
+
+            if (rapidClickProtectionCoroutine != null)
+            {
+                StopCoroutine(rapidClickProtectionCoroutine);
+                rapidClickProtectionCoroutine = null;
+            }
+
+            if (selectionHoldCoroutine != null)
+            {
+                StopCoroutine(selectionHoldCoroutine);
+                selectionHoldCoroutine = null;
+            }
+        }
+        #endregion
+
+        #region 工具方法
+        private void CheckGamepadConnection()
+        {
+            bool isGamepadConnected = Gamepad.current != null;
+
+            if (isGamepadConnected != wasGamepadConnected)
+            {
+                wasGamepadConnected = isGamepadConnected;
+
+                if (isGamepadConnected && gamepadPriority)
+                {
+                    usingGamepad = true;
+                    OnGamepadActivated();
+                }
+                else if (!isGamepadConnected)
+                {
+                    usingGamepad = false;
+                    OnGamepadDeactivated();
+                }
+            }
+            else if (isGamepadConnected && !usingGamepad && gamepadPriority)
+            {
+                usingGamepad = true;
+                OnGamepadActivated();
+            }
+        }
+
+        private void OnGamepadActivated()
+        {
+            // 设置输入模式为手柄
+            SetInputMode(InputMode.Gamepad);
+
+            Cursor.visible = false;
+
+            // 使用当前活动面板的默认对象
+            GameObject targetObject = currentActivePanel?.DefaultSelection ?? firstSelectedObject;
+
+            // 立即设置选中对象
+            if (targetObject != null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 激活手柄模式，设置选中对象: {targetObject.name}");
+                }
+
+                SetSelectedObject(targetObject);
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 切换到手柄模式");
+            }
+        }
+
+        private void OnGamepadDeactivated()
+        {
+            // 设置输入模式为键鼠
+            SetInputMode(InputMode.KeyboardMouse);
+
+            Cursor.visible = true;
+
+            if (!gamepadPriority)
+            {
+                if (eventSystem != null)
+                {
+                    eventSystem.SetSelectedGameObject(null);
+                }
+                currentSelectedObject = null;
+            }
+
+            retryCount = 0;
+            isNavigating = false;
+            isInteractingWithUI = false;
+            shouldIgnoreSubmit = false;
+
+            // 重置保护状态
+            isInDebouncePeriod = false;
+            isInRapidClickProtection = false;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 切换到键鼠模式");
+            }
+        }
+
+        /// <summary>
+        /// 检查对象是否可选中
+        /// </summary>
+        private bool IsObjectSelectable(GameObject obj)
+        {
+            if (obj == null) return false;
+
+            // 检查是否有任何可交互的UI组件
+            var selectable = obj.GetComponent<Selectable>();
+            if (selectable != null)
+            {
+                return selectable.interactable && selectable.isActiveAndEnabled;
+            }
+
+            // 检查Toggle
+            var toggle = obj.GetComponent<Toggle>();
+            if (toggle != null)
+            {
+                return toggle.interactable && toggle.isActiveAndEnabled;
+            }
+
+            // 检查Slider
+            var slider = obj.GetComponent<Slider>();
+            if (slider != null)
+            {
+                return slider.interactable && slider.isActiveAndEnabled;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 获取UI元素的类型
+        /// </summary>
+        private UIType GetUIType(GameObject obj)
+        {
+            if (obj == null) return UIType.Other;
+
+            if (obj.GetComponent<Button>() != null) return UIType.Button;
+            if (obj.GetComponent<Toggle>() != null) return UIType.Toggle;
+            if (obj.GetComponent<Slider>() != null) return UIType.Slider;
+
+            return UIType.Other;
+        }
+
+        private IEnumerator ResetNavigationState()
+        {
+            // 等待导航完成
+            yield return new WaitForSeconds(0.1f);
+            isNavigating = false;
+        }
+
+        private IEnumerator DelayedEnable()
+        {
+            yield return new WaitForEndOfFrame();
+
+            CheckGamepadConnection();
+
+            if (usingGamepad || (gamepadPriority && Gamepad.current != null))
+            {
+                GameObject targetObject = currentActivePanel?.DefaultSelection ?? firstSelectedObject;
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 使用选中对象: {targetObject?.name ?? "null"}");
+                }
+
+                if (waitForLayoutRebuild)
+                {
+                    yield return StartCoroutine(SetSelectedAfterLayoutRebuild(targetObject));
+                }
+                else
+                {
+                    SetSelectedObject(targetObject);
+                }
+            }
+        }
+
+        private IEnumerator SetSelectedAfterLayoutRebuild(GameObject selectedObject)
+        {
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForSeconds(selectionDelay);
+
+            SetSelectedObject(selectedObject);
+        }
+
+        private IEnumerator ValidateSelection(GameObject expectedSelected)
+        {
+            yield return new WaitForEndOfFrame();
+
+            if (eventSystem != null && eventSystem.currentSelectedGameObject != expectedSelected)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[GamePadNavigationManager] 选中状态验证失败! 期望: {expectedSelected.name}, 实际: {eventSystem.currentSelectedGameObject?.name ?? "null"}");
+                }
+
+                if (retryCount < maxRetryAttempts)
+                {
+                    retryCount++;
+                    SetSelectedObject(expectedSelected);
+                }
+            }
+            else if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 选中状态验证成功: {expectedSelected.name}");
+            }
+        }
+        #endregion
+
+        #region 高亮处理
+        /// <summary>
+        /// 持续确保Toggle高亮状态的协程
+        /// </summary>
+        private IEnumerator KeepToggleHighlighted(Toggle toggle)
+        {
+            if (toggle == null) yield break;
+
+            // 持续一段时间内确保Toggle保持高亮
+            float duration = 2f; // 持续2秒
+            float elapsed = 0f;
+
+            while (elapsed < duration && currentSelectedObject == toggle.gameObject)
+            {
+                if (forceHighlightState && useUniversalHighlight)
+                {
+                    EnsureToggleHighlight(toggle);
+                }
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            if (enableDebugLogs && elapsed >= duration)
+            {
+                Debug.Log($"[GamePadNavigationManager] Toggle持续高亮保护期结束: {toggle.gameObject.name}");
+            }
+        }
+
+        /// <summary>
+        /// 确保按钮显示高亮状态（适用于Button等使用SpriteSwap的组件）
+        /// </summary>
+        private void EnsureHighlightState(GameObject selectedObject)
+        {
+            var selectable = selectedObject.GetComponent<Selectable>();
+            if (selectable == null) return;
+
+            try
+            {
+                MethodInfo doStateTransition = typeof(Selectable).GetMethod("DoStateTransition",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+                if (doStateTransition != null)
+                {
+                    doStateTransition.Invoke(selectable, new object[] { 1, true }); // 1 = Highlighted
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 强制设置按钮高亮状态: {selectedObject.name}");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[GamePadNavigationManager] 强制设置按钮高亮状态失败: {e.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 确保Toggle显示高亮状态（使用ColorTint）
+        /// </summary>
+        private void EnsureToggleHighlight(Toggle toggle)
+        {
+            if (toggle == null) return;
+
+            try
+            {
+                // 使用反射调用Toggle的内部状态转换方法
+                MethodInfo doStateTransition = typeof(Selectable).GetMethod("DoStateTransition",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+                if (doStateTransition != null)
+                {
+                    doStateTransition.Invoke(toggle, new object[] { 1, true }); // 1 = Highlighted
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 强制设置Toggle高亮状态: {toggle.gameObject.name}");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[GamePadNavigationManager] 强制设置Toggle高亮状态失败: {e.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 确保Slider显示高亮状态（使用ColorTint）
+        /// </summary>
+        private void EnsureSliderHighlight(Slider slider)
+        {
+            if (slider == null) return;
+
+            try
+            {
+                // 使用反射调用Slider的内部状态转换方法
+                MethodInfo doStateTransition = typeof(Selectable).GetMethod("DoStateTransition",
+                    BindingFlags.NonPublic | BindingFlags.Instance);
+
+                if (doStateTransition != null)
+                {
+                    doStateTransition.Invoke(slider, new object[] { 1, true }); // 1 = Highlighted
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[GamePadNavigationManager] 强制设置Slider高亮状态: {slider.gameObject.name}");
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[GamePadNavigationManager] 强制设置Slider高亮状态失败: {e.Message}");
+                }
+            }
+        }
+        #endregion
+
+        #region 公共API
+        public void SetDefaultSelectedObject(GameObject selectedObject)
+        {
+            firstSelectedObject = selectedObject;
+            if (lastSelectedObject == null)
+            {
+                lastSelectedObject = selectedObject;
+            }
+
+            if (usingGamepad)
+            {
+                SetSelectedObject(selectedObject);
+            }
+        }
+
+        public void SetSelectedObjectDelayed(GameObject selectedObject)
+        {
+            StartCoroutine(SetSelectedAfterLayoutRebuild(selectedObject));
+        }
+
+        public bool IsUsingGamepad()
+        {
+            return usingGamepad;
+        }
+
+        public void ForceSetNavigationMode(bool useGamepad)
+        {
+            if (useGamepad != usingGamepad)
+            {
+                usingGamepad = useGamepad;
+                if (useGamepad)
+                {
+                    OnGamepadActivated();
+                }
+                else
+                {
+                    OnGamepadDeactivated();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设置选中对象并通知当前面板
+        /// </summary>
+        public void SetSelectedObjectWithPanelNotify(GameObject selectedObject)
+        {
+            SetSelectedObject(selectedObject);
+
+            // 通知当前活动面板更新选中状态
+            if (currentActivePanel is SettingsNavigationPanel settingsPanel)
+            {
+                settingsPanel.UpdateCurrentSelection(selectedObject);
+            }
+        }
+
+        /// <summary>
+        /// 获取当前选中的游戏对象
+        /// </summary>
+        public GameObject GetCurrentSelectedGameObject()
+        {
+            return eventSystem != null ? eventSystem.currentSelectedGameObject : null;
+        }
+
+        [ContextMenu("重置选中状态")]
+        public void ResetSelection()
+        {
+            retryCount = 0;
+            isInteractingWithUI = false;
+            shouldIgnoreSubmit = false;
+            GameObject targetObject = currentActivePanel?.DefaultSelection ?? firstSelectedObject;
+
+            if (targetObject != null)
+            {
+                SetSelectedObject(targetObject);
+            }
+        }
+
+        [ContextMenu("重置到初始选中对象")]
+        public void ResetToInitialSelection()
+        {
+            retryCount = 0;
+            isInteractingWithUI = false;
+            shouldIgnoreSubmit = false;
+            if (firstSelectedObject != null)
+            {
+                SetSelectedObject(firstSelectedObject);
+            }
+        }
+
+        public void MarkUIInteracting(bool interacting)
+        {
+            isInteractingWithUI = interacting;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 设置UI交互状态: {interacting}");
+            }
+        }
+
+        public bool ShouldIgnoreSubmit()
+        {
+            return shouldIgnoreSubmit || (currentActivePanel?.ShouldIgnoreSubmit() ?? false);
+        }
+
+        public void SetIgnoreSubmit(bool ignore)
+        {
+            shouldIgnoreSubmit = ignore;
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 设置忽略确认键状态: {ignore}");
+            }
+        }
+
+        public GameObject GetLastSelectedObject()
+        {
+            return lastSelectedObject;
+        }
+
+        public void SetLastSelectedObject(GameObject selectedObject)
+        {
+            if (selectedObject != null && IsObjectSelectable(selectedObject))
+            {
+                lastSelectedObject = selectedObject;
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[GamePadNavigationManager] 手动设置最后选中对象: {selectedObject.name}");
+                }
+            }
+        }
+
+        public void ResetToLastSelectedObject()
+        {
+            if (lastSelectedObject != null)
+            {
+                SetSelectedObject(lastSelectedObject);
+            }
+        }
+
+        public void ResetProtectionState()
+        {
+            isInDebouncePeriod = false;
+            isInRapidClickProtection = false;
+            StopAllProtectionCoroutines();
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[GamePadNavigationManager] 手动重置保护状态");
+            }
+        }
+
+        [ContextMenu("手动设置选中对象")]
+        public void ManualSetSelectedObject()
+        {
+            GameObject targetObject = currentActivePanel?.DefaultSelection ?? firstSelectedObject;
+
+            if (targetObject != null)
+            {
+                SetSelectedObject(targetObject);
+            }
+            else
+            {
+                Debug.LogError("[GamePadNavigationManager] 没有可用的选中对象!");
+            }
+        }
+
+        [ContextMenu("强制重新设置选中对象")]
+        public void ForceReselectObject()
+        {
+            if (lastSelectedObject != null)
+            {
+                retryCount = 0;
+                isInteractingWithUI = false;
+                shouldIgnoreSubmit = false;
+                SetSelectedObject(lastSelectedObject);
+            }
+        }
+
+        [ContextMenu("测试手柄输入")]
+        public void TestGamepadInput()
+        {
+            if (Gamepad.current != null)
+            {
+                Vector2 dpad = Gamepad.current.dpad.ReadValue();
+                Vector2 leftStick = Gamepad.current.leftStick.ReadValue();
+
+                bool anyButtonPressed = Gamepad.current.aButton.wasPressedThisFrame ||
+                                       Gamepad.current.bButton.wasPressedThisFrame ||
+                                       Gamepad.current.xButton.wasPressedThisFrame ||
+                                       Gamepad.current.yButton.wasPressedThisFrame;
+
+                Debug.Log($"[GamePadNavigationManager] 手柄输入测试:");
+                Debug.Log($"- DPad: {dpad}");
+                Debug.Log($"- Left Stick: {leftStick}");
+                Debug.Log($"- 按钮按下: {anyButtonPressed}");
+                Debug.Log($"- 当前UI类型: {currentUIType}");
+                Debug.Log($"- 正在交互: {isInteractingWithUI}");
+                Debug.Log($"- 忽略确认键: {shouldIgnoreSubmit}");
+                Debug.Log($"- 最后选中对象: {lastSelectedObject?.name ?? "null"}");
+                Debug.Log($"- 当前活动面板: {currentActivePanel?.PanelName ?? "无"}");
+                Debug.Log($"- 防抖保护: {isInDebouncePeriod}");
+                Debug.Log($"- 快速点击保护: {isInRapidClickProtection}");
+                Debug.Log($"- 当前输入模式: {currentInputMode}");
+            }
+            else
+            {
+                Debug.Log("[GamePadNavigationManager] 没有检测到手柄");
+            }
+        }
+
+        [ContextMenu("打印当前状态")]
+        public void PrintCurrentStatus()
+        {
+            Debug.Log($"[GamePadNavigationManager] 状态报告:");
+            Debug.Log($"- 使用手柄: {usingGamepad}");
+            Debug.Log($"- 手柄连接: {Gamepad.current != null}");
+            Debug.Log($"- 默认对象: {firstSelectedObject?.name ?? "未设置"}");
+            Debug.Log($"- 当前选中: {eventSystem?.currentSelectedGameObject?.name ?? "无"}");
+            Debug.Log($"- 最后选中: {lastSelectedObject?.name ?? "无"}");
+            if (eventSystem?.currentSelectedGameObject != null)
+            {
+                Debug.Log($"- 当前选中类型: {GetUIType(eventSystem.currentSelectedGameObject)}");
+            }
+            Debug.Log($"- 强制高亮状态: {forceHighlightState}");
+            Debug.Log($"- 通用高亮: {useUniversalHighlight}");
+            Debug.Log($"- 启用导航: {enableNavigation}");
+            Debug.Log($"- 正在导航: {isNavigating}");
+            Debug.Log($"- 重试计数: {retryCount}/{maxRetryAttempts}");
+            Debug.Log($"- 手柄优先: {gamepadPriority}");
+            Debug.Log($"- 当前UI类型: {currentUIType}");
+            Debug.Log($"- 正在交互: {isInteractingWithUI}");
+            Debug.Log($"- 忽略确认键: {shouldIgnoreSubmit}");
+            Debug.Log($"- 防抖保护: {isInDebouncePeriod}");
+            Debug.Log($"- 快速点击保护: {isInRapidClickProtection}");
+            Debug.Log($"- 启用防抖: {enableDebounceProtection}");
+            Debug.Log($"- 防抖时间: {debounceTime}");
+            Debug.Log($"- 快速点击保护时间: {rapidClickProtectionTime}");
+            Debug.Log($"- 最小选中保持时间: {minSelectionHoldTime}");
+            Debug.Log($"- 注册面板数量: {registeredPanels.Count}");
+            Debug.Log($"- 当前活动面板: {currentActivePanel?.PanelName ?? "无"}");
+            Debug.Log($"- 当前输入模式: {currentInputMode}");
+
+            // 打印所有注册面板
+            foreach (var panel in registeredPanels)
+            {
+                Debug.Log($"  - {panel.PanelName} (优先级: {panel.Priority}, 活跃: {panel.IsActive}, 自定义导航: {panel.UseCustomNavigation})");
+            }
+        }
+        #endregion
+    }
+}
+
+
+============================================================
+文件: HelperNavigationController.cs
+============================================================
+
+using UnityEngine;
+using System.Collections;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+namespace Nova
+{
+    public class HelperNavigationController : BaseNavigationPanel
+    {
+        [Header("帮助页面导航设置")]
+        [Tooltip("是否完全禁用导航")]
+        [SerializeField] private bool disableNavigationCompletely = true;
+
+        private HelpViewController helpViewController;
+        private bool isInitialized = false;
+
+        // 重写面板属性
+        public override string PanelName => "帮助页面";
+        public override int Priority => PanelPriority.HELP;
+        public override bool UseCustomNavigation => true;
+        public override GameObject DefaultSelection => null;
+
+        protected override void Start()
+        {
+            // 获取 HelpViewController 引用
+            helpViewController = GetComponent<HelpViewController>();
+            if (helpViewController == null)
+            {
+                helpViewController = GetComponentInParent<HelpViewController>();
+            }
+
+            // 设置面板属性
+            panelName = "帮助页面";
+            priority = PanelPriority.HELP;
+            useCustomNavigation = true;
+
+            defaultSelection = null;
+
+            // 调用基类Start进行自动注册
+            base.Start();
+
+            isInitialized = true;
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 帮助页面导航控制器初始化完成");
+            }
+        }
+
+        #region Unity 生命周期方法（不是重写）
+        private void OnEnable()
+        {
+            if (!isInitialized) return;
+
+            // 启用时立即禁用导航
+            if (disableNavigationCompletely)
+            {
+                DisableNavigationCompletely();
+            }
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 帮助页面启用，导航已禁用");
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (!isInitialized) return;
+
+            // 禁用时恢复导航
+            EnableNavigation();
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 帮助页面禁用，导航已恢复");
+            }
+        }
+
+        private void Update()
+        {
+            if (!isInitialized) return;
+
+            // 每帧都确保没有选中对象（额外的保护）
+            if (disableNavigationCompletely && EventSystem.current != null &&
+                EventSystem.current.currentSelectedGameObject != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+        }
+        #endregion
+
+        #region INavigationPanel 接口实现
+        public override void OnPanelActivated()
+        {
+            // 面板激活时完全禁用导航
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.SetIgnoreSubmit(true);
+                GamePadNavigationManager.Instance.MarkUIInteracting(true);
+
+                // 延迟清除选中状态，确保在布局完成后执行
+                StartCoroutine(ClearSelectionAfterFrame());
+            }
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 帮助页面激活，导航已完全禁用");
+            }
+        }
+
+        public override void OnPanelDeactivated()
+        {
+            // 面板停用时恢复导航
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.SetIgnoreSubmit(false);
+                GamePadNavigationManager.Instance.MarkUIInteracting(false);
+            }
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 帮助页面停用，导航已恢复");
+            }
+        }
+
+        public override void HandleCustomNavigation()
+        {
+            // 自定义导航逻辑：完全不做任何导航处理
+            // 返回逻辑由 HelpViewController 的 ViewControllerBase 处理
+        }
+
+        public override bool ShouldIgnoreSubmit()
+        {
+            // 总是忽略确认键提交
+            return true;
+        }
+        #endregion
+
+        #region 清理选中状态
+        private IEnumerator ClearSelectionAfterFrame()
+        {
+            // 等待一帧确保UI布局完成
+            yield return null;
+
+            // 清除EventSystem的选中状态
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+
+            // 确保导航管理器也没有选中对象
+            if (GamePadNavigationManager.Instance != null)
+            {
+                ClearNavigationManagerSelection();
+            }
+        }
+
+        /// <summary>
+        /// 强制清除导航管理器的选中状态
+        /// </summary>
+        private void ClearNavigationManagerSelection()
+        {
+            if (GamePadNavigationManager.Instance == null) return;
+
+            try
+            {
+                // 使用反射强制设置私有字段
+                var managerType = typeof(GamePadNavigationManager);
+                var currentSelectedField = managerType.GetField("currentSelectedObject",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var lastSelectedField = managerType.GetField("lastSelectedObject",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var retryCountField = managerType.GetField("retryCount",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+                if (currentSelectedField != null)
+                {
+                    currentSelectedField.SetValue(GamePadNavigationManager.Instance, null);
+                }
+                if (lastSelectedField != null)
+                {
+                    lastSelectedField.SetValue(GamePadNavigationManager.Instance, null);
+                }
+                if (retryCountField != null)
+                {
+                    retryCountField.SetValue(GamePadNavigationManager.Instance, 0);
+                }
+
+                // 重置保护状态
+                GamePadNavigationManager.Instance.ResetProtectionState();
+            }
+            catch (System.Exception e)
+            {
+                if (GamePadNavigationManager.Instance.enableDebugLogs)
+                {
+                    Debug.LogWarning($"[{PanelName}] 清除导航管理器状态失败: {e.Message}");
+                }
+            }
+        }
+        #endregion
+
+        #region 重写基类方法以确保纯净性
+        /// <summary>
+        /// 重写收集Selectables方法，确保不收集任何可交互元素
+        /// </summary>
+        protected override void CollectSelectables()
+        {
+            // 完全清空收集的列表
+            collectedSelectables.Clear();
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[{PanelName}] 帮助页面已清空所有可交互元素");
+            }
+        }
+
+        /// <summary>
+        /// 重写验证方法，确保所有元素都被视为无效
+        /// </summary>
+        protected override bool IsSelectableValid(Selectable selectable)
+        {
+            // 帮助页面中所有Selectable都视为无效
+            return false;
+        }
+
+        /// <summary>
+        /// 重写可交互检查，确保所有元素都不可交互
+        /// </summary>
+        protected override bool IsSelectableInteractable(Selectable selectable)
+        {
+            // 帮助页面中所有Selectable都不可交互
+            return false;
+        }
+        #endregion
+
+        #region 公共API
+        /// <summary>
+        /// 完全禁用导航（用于外部调用）
+        /// </summary>
+        public void DisableNavigationCompletely()
+        {
+            disableNavigationCompletely = true;
+
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.SetIgnoreSubmit(true);
+                GamePadNavigationManager.Instance.MarkUIInteracting(true);
+
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+
+                // 强制清除导航管理器状态
+                ClearNavigationManagerSelection();
+            }
+        }
+
+        /// <summary>
+        /// 恢复导航（用于外部调用）
+        /// </summary>
+        public void EnableNavigation()
+        {
+            disableNavigationCompletely = false;
+
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.SetIgnoreSubmit(false);
+                GamePadNavigationManager.Instance.MarkUIInteracting(false);
+            }
+        }
+
+        /// <summary>
+        /// 获取当前导航禁用状态
+        /// </summary>
+        public bool GetNavigationDisabledState()
+        {
+            return disableNavigationCompletely;
+        }
+
+        /// <summary>
+        /// 手动触发面板激活（用于外部调用）
+        /// </summary>
+        public void ManualActivatePanel()
+        {
+            OnPanelActivated();
+        }
+
+        /// <summary>
+        /// 手动触发面板停用（用于外部调用）
+        /// </summary>
+        public void ManualDeactivatePanel()
+        {
+            OnPanelDeactivated();
+        }
+        #endregion
+
+        #region 调试方法
+        [ContextMenu("打印导航状态")]
+        public void PrintNavigationStatus()
+        {
+            Debug.Log($"[{PanelName}] 导航状态报告:");
+            Debug.Log($"- 初始化: {isInitialized}");
+            Debug.Log($"- 完全禁用导航: {disableNavigationCompletely}");
+            Debug.Log($"- 当前选中对象: {EventSystem.current?.currentSelectedGameObject?.name ?? "null"}");
+            Debug.Log($"- 导航管理器实例: {GamePadNavigationManager.Instance != null}");
+
+            if (GamePadNavigationManager.Instance != null)
+            {
+                Debug.Log($"- 忽略提交: {GamePadNavigationManager.Instance.ShouldIgnoreSubmit()}");
+                Debug.Log($"- 使用手柄: {GamePadNavigationManager.Instance.IsUsingGamepad()}");
+            }
+        }
+
+        [ContextMenu("强制禁用导航")]
+        public void ForceDisableNavigation()
+        {
+            DisableNavigationCompletely();
+            Debug.Log($"[{PanelName}] 已强制禁用导航");
+        }
+
+        [ContextMenu("强制恢复导航")]
+        public void ForceEnableNavigation()
+        {
+            EnableNavigation();
+            Debug.Log($"[{PanelName}] 已强制恢复导航");
+        }
+        #endregion
+    }
+}
+
+
+============================================================
+文件: InputModeImage.cs
+============================================================
+
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections;
+using UnityEngine.InputSystem;
+
+namespace Nova
+{
+    /// <summary>
+    /// 根据输入模式自动切换图片或GameObject的组件
+    /// 使用方法：挂在Image上，配置两套图片（键盘鼠标和手柄）
+    /// 扩展模式：可以切换整个GameObject而不仅仅是图片
+    /// </summary>
+    public class InputModeImage : MonoBehaviour
+    {
+        [Header("扩展模式")]
+        [Tooltip("启用后切换GameObject而不是Sprite")]
+        [SerializeField] private bool useGameObjectSwitch = false;
+
+        [Header("图片配置")]
+        [Tooltip("键盘鼠标模式下显示的图片")]
+        [SerializeField] private Sprite keyboardMouseSprite;
+
+        [Tooltip("手柄模式下显示的图片")]
+        [SerializeField] private Sprite gamepadSprite;
+
+        [Header("GameObject配置（扩展模式使用）")]
+        [Tooltip("键盘鼠标模式下显示的GameObject")]
+        [SerializeField] private GameObject keyboardMouseObject;
+
+        [Tooltip("手柄模式下显示的GameObject")]
+        [SerializeField] private GameObject gamepadObject;
+
+        [Header("组件引用")]
+        [Tooltip("目标Image组件（自动获取）")]
+        [SerializeField] private Image targetImage;
+
+        [Header("设置")]
+        [Tooltip("启用时立即更新图片")]
+        [SerializeField] private bool updateOnEnable = true;
+
+        [Tooltip("延迟更新时间（秒）")]
+        [SerializeField] private float updateDelay = 0.1f;
+
+        [Tooltip("启用调试日志")]
+        [SerializeField] private bool enableDebugLogs = false;
+
+        [Header("备用图片")]
+        [Tooltip("键盘鼠标模式备用图片（当主图片为空时使用）")]
+        [SerializeField] private Sprite fallbackKeyboardMouseSprite;
+
+        [Tooltip("手柄模式备用图片（当主图片为空时使用）")]
+        [SerializeField] private Sprite fallbackGamepadSprite;
+
+        [Header("备用GameObject（扩展模式使用）")]
+        [Tooltip("键盘鼠标模式备用GameObject（当主GameObject为空时使用）")]
+        [SerializeField] private GameObject fallbackKeyboardMouseObject;
+
+        [Tooltip("手柄模式备用GameObject（当主GameObject为空时使用）")]
+        [SerializeField] private GameObject fallbackGamepadObject;
+
+        private bool isInitialized = false;
+        private InputMode lastInputMode;
+
+        #region Unity 生命周期
+        private void Awake()
+        {
+            InitializeComponent();
+        }
+
+        private void OnEnable()
+        {
+            if (!isInitialized)
+            {
+                InitializeComponent();
+            }
+
+            // 注册输入模式改变事件
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.OnInputModeChanged += OnInputModeChanged;
+            }
+
+            if (updateOnEnable)
+            {
+                // 延迟更新以确保所有组件已初始化
+                StartCoroutine(DelayedUpdateImage());
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[InputModeImage] 组件启用，目标: {targetImage?.gameObject.name ?? "null"}，扩展模式: {useGameObjectSwitch}");
+            }
+        }
+
+        private void OnDisable()
+        {
+            // 注销事件
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.OnInputModeChanged -= OnInputModeChanged;
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[InputModeImage] 组件禁用");
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // 清理事件
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.OnInputModeChanged -= OnInputModeChanged;
+            }
+        }
+
+        private void Start()
+        {
+            // 确保图片已更新
+            if (isInitialized && updateOnEnable)
+            {
+                UpdateDisplayBasedOnInputMode();
+            }
+        }
+        #endregion
+
+        #region 初始化
+        /// <summary>
+        /// 初始化组件
+        /// </summary>
+        private void InitializeComponent()
+        {
+            if (useGameObjectSwitch)
+            {
+                // 扩展模式：检查GameObject配置
+                if (keyboardMouseObject == null && fallbackKeyboardMouseObject == null)
+                {
+                    Debug.LogWarning($"[InputModeImage] {gameObject.name} 扩展模式未配置键盘鼠标GameObject");
+                }
+
+                if (gamepadObject == null && fallbackGamepadObject == null)
+                {
+                    Debug.LogWarning($"[InputModeImage] {gameObject.name} 扩展模式未配置手柄GameObject");
+                }
+
+                // 初始隐藏所有GameObject，后续会根据输入模式显示对应的
+                SetAllGameObjectsActive(false);
+            }
+            else
+            {
+                // 原有模式：自动获取Image组件
+                if (targetImage == null)
+                {
+                    targetImage = GetComponent<Image>();
+                }
+
+                if (targetImage == null)
+                {
+                    Debug.LogError($"[InputModeImage] 在 {gameObject.name} 上找不到Image组件！");
+                    return;
+                }
+
+                // 检查图片配置
+                if (keyboardMouseSprite == null && fallbackKeyboardMouseSprite == null)
+                {
+                    Debug.LogWarning($"[InputModeImage] {gameObject.name} 未配置键盘鼠标图片");
+                }
+
+                if (gamepadSprite == null && fallbackGamepadSprite == null)
+                {
+                    Debug.LogWarning($"[InputModeImage] {gameObject.name} 未配置手柄图片");
+                }
+            }
+
+            isInitialized = true;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[InputModeImage] 初始化完成: {gameObject.name}, 扩展模式: {useGameObjectSwitch}");
+            }
+        }
+
+        /// <summary>
+        /// 设置所有GameObject为非激活状态
+        /// </summary>
+        private void SetAllGameObjectsActive(bool active)
+        {
+            if (keyboardMouseObject != null) keyboardMouseObject.SetActive(active);
+            if (gamepadObject != null) gamepadObject.SetActive(active);
+            if (fallbackKeyboardMouseObject != null) fallbackKeyboardMouseObject.SetActive(active);
+            if (fallbackGamepadObject != null) fallbackGamepadObject.SetActive(active);
+        }
+        #endregion
+
+        #region 显示更新
+        /// <summary>
+        /// 输入模式改变事件处理
+        /// </summary>
+        private void OnInputModeChanged(InputMode newMode)
+        {
+            if (!isInitialized || !isActiveAndEnabled) return;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[InputModeImage] 输入模式改变: {lastInputMode} -> {newMode}, 扩展模式: {useGameObjectSwitch}");
+            }
+
+            lastInputMode = newMode;
+            UpdateDisplayBasedOnInputMode();
+        }
+
+        /// <summary>
+        /// 根据当前输入模式更新显示
+        /// </summary>
+        private void UpdateDisplayBasedOnInputMode()
+        {
+            if (!isInitialized) return;
+
+            if (useGameObjectSwitch)
+            {
+                UpdateGameObjectBasedOnInputMode();
+            }
+            else
+            {
+                UpdateImageBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 更新图片显示（原有模式）
+        /// </summary>
+        private void UpdateImageBasedOnInputMode()
+        {
+            if (targetImage == null) return;
+
+            InputMode currentMode = GetCurrentInputMode();
+            Sprite newSprite = GetSpriteForInputMode(currentMode);
+
+            if (newSprite != null && newSprite != targetImage.sprite)
+            {
+                targetImage.sprite = newSprite;
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[InputModeImage] 更新图片: {gameObject.name} -> {currentMode}");
+                }
+            }
+            else if (newSprite == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[InputModeImage] 找不到对应输入模式的图片: {currentMode}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 更新GameObject显示（扩展模式）
+        /// </summary>
+        private void UpdateGameObjectBasedOnInputMode()
+        {
+            InputMode currentMode = GetCurrentInputMode();
+            GameObject targetObject = GetGameObjectForInputMode(currentMode);
+            GameObject otherObject = GetGameObjectForInputMode(currentMode == InputMode.KeyboardMouse ? InputMode.Gamepad : InputMode.KeyboardMouse);
+
+            // 先禁用所有
+            SetAllGameObjectsActive(false);
+
+            // 启用目标GameObject
+            if (targetObject != null)
+            {
+                targetObject.SetActive(true);
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[InputModeImage] 更新GameObject: {gameObject.name} -> {currentMode}, 显示: {targetObject.name}");
+                }
+            }
+            else
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[InputModeImage] 找不到对应输入模式的GameObject: {currentMode}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取当前输入模式
+        /// </summary>
+        private InputMode GetCurrentInputMode()
+        {
+            if (GamePadNavigationManager.Instance != null)
+            {
+                return GamePadNavigationManager.Instance.GetCurrentInputMode();
+            }
+
+            // 备用方案：检查是否有手柄连接
+            return Gamepad.current != null ? InputMode.Gamepad : InputMode.KeyboardMouse;
+        }
+
+        /// <summary>
+        /// 根据输入模式获取对应的图片
+        /// </summary>
+        private Sprite GetSpriteForInputMode(InputMode mode)
+        {
+            switch (mode)
+            {
+                case InputMode.KeyboardMouse:
+                    return keyboardMouseSprite ?? fallbackKeyboardMouseSprite;
+
+                case InputMode.Gamepad:
+                    return gamepadSprite ?? fallbackGamepadSprite;
+
+                default:
+                    return keyboardMouseSprite ?? fallbackKeyboardMouseSprite;
+            }
+        }
+
+        /// <summary>
+        /// 根据输入模式获取对应的GameObject
+        /// </summary>
+        private GameObject GetGameObjectForInputMode(InputMode mode)
+        {
+            switch (mode)
+            {
+                case InputMode.KeyboardMouse:
+                    return keyboardMouseObject ?? fallbackKeyboardMouseObject;
+
+                case InputMode.Gamepad:
+                    return gamepadObject ?? fallbackGamepadObject;
+
+                default:
+                    return keyboardMouseObject ?? fallbackKeyboardMouseObject;
+            }
+        }
+
+        /// <summary>
+        /// 延迟更新显示
+        /// </summary>
+        private IEnumerator DelayedUpdateImage()
+        {
+            yield return new WaitForSeconds(updateDelay);
+            UpdateDisplayBasedOnInputMode();
+        }
+        #endregion
+
+        #region 公共API
+        /// <summary>
+        /// 手动更新显示
+        /// </summary>
+        [ContextMenu("手动更新显示")]
+        public void ManualUpdateImage()
+        {
+            if (!isInitialized)
+            {
+                InitializeComponent();
+            }
+
+            UpdateDisplayBasedOnInputMode();
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[InputModeImage] 手动更新显示: {gameObject.name}, 扩展模式: {useGameObjectSwitch}");
+            }
+        }
+
+        /// <summary>
+        /// 设置键盘鼠标图片
+        /// </summary>
+        public void SetKeyboardMouseSprite(Sprite sprite)
+        {
+            if (useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前处于扩展模式，设置Sprite无效");
+                return;
+            }
+
+            keyboardMouseSprite = sprite;
+            if (GetCurrentInputMode() == InputMode.KeyboardMouse)
+            {
+                UpdateImageBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置手柄图片
+        /// </summary>
+        public void SetGamepadSprite(Sprite sprite)
+        {
+            if (useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前处于扩展模式，设置Sprite无效");
+                return;
+            }
+
+            gamepadSprite = sprite;
+            if (GetCurrentInputMode() == InputMode.Gamepad)
+            {
+                UpdateImageBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置键盘鼠标GameObject（扩展模式使用）
+        /// </summary>
+        public void SetKeyboardMouseObject(GameObject gameObject)
+        {
+            if (!useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前不处于扩展模式，设置GameObject无效");
+                return;
+            }
+
+            keyboardMouseObject = gameObject;
+            if (GetCurrentInputMode() == InputMode.KeyboardMouse)
+            {
+                UpdateGameObjectBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置手柄GameObject（扩展模式使用）
+        /// </summary>
+        public void SetGamepadObject(GameObject gameObject)
+        {
+            if (!useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前不处于扩展模式，设置GameObject无效");
+                return;
+            }
+
+            gamepadObject = gameObject;
+            if (GetCurrentInputMode() == InputMode.Gamepad)
+            {
+                UpdateGameObjectBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置备用键盘鼠标图片
+        /// </summary>
+        public void SetFallbackKeyboardMouseSprite(Sprite sprite)
+        {
+            if (useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前处于扩展模式，设置Sprite无效");
+                return;
+            }
+
+            fallbackKeyboardMouseSprite = sprite;
+            if (GetCurrentInputMode() == InputMode.KeyboardMouse && keyboardMouseSprite == null)
+            {
+                UpdateImageBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置备用手柄图片
+        /// </summary>
+        public void SetFallbackGamepadSprite(Sprite sprite)
+        {
+            if (useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前处于扩展模式，设置Sprite无效");
+                return;
+            }
+
+            fallbackGamepadSprite = sprite;
+            if (GetCurrentInputMode() == InputMode.Gamepad && gamepadSprite == null)
+            {
+                UpdateImageBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置备用键盘鼠标GameObject（扩展模式使用）
+        /// </summary>
+        public void SetFallbackKeyboardMouseObject(GameObject gameObject)
+        {
+            if (!useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前不处于扩展模式，设置GameObject无效");
+                return;
+            }
+
+            fallbackKeyboardMouseObject = gameObject;
+            if (GetCurrentInputMode() == InputMode.KeyboardMouse && keyboardMouseObject == null)
+            {
+                UpdateGameObjectBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 设置备用手柄GameObject（扩展模式使用）
+        /// </summary>
+        public void SetFallbackGamepadObject(GameObject gameObject)
+        {
+            if (!useGameObjectSwitch)
+            {
+                Debug.LogWarning($"[InputModeImage] 当前不处于扩展模式，设置GameObject无效");
+                return;
+            }
+
+            fallbackGamepadObject = gameObject;
+            if (GetCurrentInputMode() == InputMode.Gamepad && gamepadObject == null)
+            {
+                UpdateGameObjectBasedOnInputMode();
+            }
+        }
+
+        /// <summary>
+        /// 强制切换到指定输入模式的显示
+        /// </summary>
+        public void ForceSetInputMode(InputMode mode)
+        {
+            if (useGameObjectSwitch)
+            {
+                GameObject targetObject = GetGameObjectForInputMode(mode);
+                SetAllGameObjectsActive(false);
+                if (targetObject != null)
+                {
+                    targetObject.SetActive(true);
+                }
+            }
+            else
+            {
+                Sprite newSprite = GetSpriteForInputMode(mode);
+                if (newSprite != null && targetImage != null)
+                {
+                    targetImage.sprite = newSprite;
+                }
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[InputModeImage] 强制设置显示模式: {gameObject.name} -> {mode}, 扩展模式: {useGameObjectSwitch}");
+            }
+        }
+
+        /// <summary>
+        /// 获取当前显示的图片类型
+        /// </summary>
+        public string GetCurrentSpriteType()
+        {
+            if (useGameObjectSwitch)
+            {
+                InputMode currentMode = GetCurrentInputMode();
+                return currentMode == InputMode.KeyboardMouse ? "KeyboardMouse GameObject" : "Gamepad GameObject";
+            }
+
+            if (targetImage == null || targetImage.sprite == null) return "None";
+
+            if (targetImage.sprite == keyboardMouseSprite || targetImage.sprite == fallbackKeyboardMouseSprite)
+                return "KeyboardMouse";
+            else if (targetImage.sprite == gamepadSprite || targetImage.sprite == fallbackGamepadSprite)
+                return "Gamepad";
+            else
+                return "Unknown";
+        }
+
+        /// <summary>
+        /// 检查组件配置状态
+        /// </summary>
+        [ContextMenu("检查配置状态")]
+        public void CheckConfiguration()
+        {
+            Debug.Log($"[InputModeImage] 配置检查:");
+            Debug.Log($"- 游戏对象: {gameObject.name}");
+            Debug.Log($"- 扩展模式: {useGameObjectSwitch}");
+
+            if (useGameObjectSwitch)
+            {
+                Debug.Log($"- 键盘鼠标GameObject: {keyboardMouseObject?.name ?? "未设置"}");
+                Debug.Log($"- 手柄GameObject: {gamepadObject?.name ?? "未设置"}");
+                Debug.Log($"- 备用键盘鼠标GameObject: {fallbackKeyboardMouseObject?.name ?? "未设置"}");
+                Debug.Log($"- 备用手柄GameObject: {fallbackGamepadObject?.name ?? "未设置"}");
+            }
+            else
+            {
+                Debug.Log($"- Image组件: {targetImage != null}");
+                Debug.Log($"- 键盘鼠标图片: {keyboardMouseSprite?.name ?? "未设置"}");
+                Debug.Log($"- 手柄图片: {gamepadSprite?.name ?? "未设置"}");
+                Debug.Log($"- 备用键盘鼠标图片: {fallbackKeyboardMouseSprite?.name ?? "未设置"}");
+                Debug.Log($"- 备用手柄图片: {fallbackGamepadSprite?.name ?? "未设置"}");
+            }
+
+            Debug.Log($"- 当前输入模式: {GetCurrentInputMode()}");
+            Debug.Log($"- 当前显示类型: {GetCurrentSpriteType()}");
+            Debug.Log($"- 初始化状态: {isInitialized}");
+        }
+
+        /// <summary>
+        /// 测试切换显示
+        /// </summary>
+        [ContextMenu("测试切换显示")]
+        public void TestSwitchSprites()
+        {
+            InputMode currentMode = GetCurrentInputMode();
+            InputMode testMode = currentMode == InputMode.KeyboardMouse ? InputMode.Gamepad : InputMode.KeyboardMouse;
+
+            Debug.Log($"[InputModeImage] 测试切换: {currentMode} -> {testMode}, 扩展模式: {useGameObjectSwitch}");
+            ForceSetInputMode(testMode);
+        }
+
+        /// <summary>
+        /// 切换扩展模式
+        /// </summary>
+        public void SetUseGameObjectSwitch(bool useGameObject)
+        {
+            if (useGameObjectSwitch != useGameObject)
+            {
+                useGameObjectSwitch = useGameObject;
+                isInitialized = false;
+                InitializeComponent();
+                UpdateDisplayBasedOnInputMode();
+            }
+        }
+        #endregion
+
+        #region 编辑器方法
+#if UNITY_EDITOR
+        /// <summary>
+        /// 在编辑器中快速配置组件
+        /// </summary>
+        [ContextMenu("快速配置")]
+        private void QuickSetup()
+        {
+            InitializeComponent();
+            UnityEditor.EditorUtility.SetDirty(this);
+            UnityEditor.EditorUtility.SetDirty(gameObject);
+        }
+#endif
+        #endregion
+    }
+}
+
+
+============================================================
+文件: LogNavigationController.cs
+============================================================
+
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+namespace Nova
+{
+    public class LogNavigationController : MonoBehaviour, INavigationPanel
+    {
+        [Header("导航设置")]
+        [Tooltip("启动时自动选中最后一个条目")]
+        [SerializeField] private bool autoSelectOnEnable = true;
+        [Tooltip("导航输入冷却时间（秒）")]
+        [SerializeField] private float navigationCooldown = 0.3f;
+        [Tooltip("手柄输入优先于鼠标输入")]
+        [SerializeField] private bool gamepadPriority = true;
+        [Tooltip("启用调试日志")]
+        [SerializeField] private bool enableDebugLogs = false;
+
+        [Header("滚动条设置")]
+        [Tooltip("LoopVerticalScrollRectWithSwitch 组件")]
+        [SerializeField] private LoopVerticalScrollRectWithSwitch scrollRect;
+        [Tooltip("右摇杆滚动速度")]
+        [SerializeField] private float scrollSpeed = 1.5f;
+
+        [Header("高亮显示设置")]
+        [Tooltip("高亮模式")]
+        [SerializeField] private HighlightMode highlightMode = HighlightMode.TextColor;
+        [Tooltip("强制保持高亮状态")]
+        [SerializeField] private bool forceHighlightState = true;
+        [Tooltip("文本高亮颜色")]
+        [SerializeField] private Color textHighlightColor = new Color(1f, 1f, 0f, 1f);
+        [Tooltip("背景高亮颜色")]
+        [SerializeField] private Color backgroundHighlightColor = new Color(1f, 1f, 0f, 0.3f);
+
+        [Header("导航面板设置")]
+        [Tooltip("面板名称")]
+        [SerializeField] private string panelName = "LogView";
+        [Tooltip("面板优先级")]
+        [SerializeField] private int priority = PanelPriority.LOG;
+        [Tooltip("默认选中对象")]
+        [SerializeField] private GameObject defaultSelection;
+        [Tooltip("使用自定义导航")]
+        [SerializeField] private bool useCustomNavigation = true;
+
+        // 高亮模式枚举
+        public enum HighlightMode
+        {
+            TextColor,
+            Background,
+            Outline,
+            Scale,
+            Multiple
+        }
+
+        // 私有字段
+        private LogController logController;
+        private int currentSelectedIndex = -1;
+        private EventSystem eventSystem;
+        private float lastNavigationTime;
+        private bool isActive = false;
+        private bool usingGamepad = false;
+        private bool wasGamepadConnected = false;
+
+        // 性能优化字段
+        private Coroutine refreshCoroutine;
+        private int lastValidSelectedIndex = -1;
+        private bool isInitialized = false;
+
+        // 当前可见条目管理
+        private List<GameObject> visibleEntries = new List<GameObject>();
+        private Dictionary<GameObject, Color[]> originalTextColors = new Dictionary<GameObject, Color[]>();
+        private Dictionary<GameObject, Color> originalBackgroundColors = new Dictionary<GameObject, Color>();
+
+        // 输入状态
+        private bool dpadUpPressed = false;
+        private bool dpadDownPressed = false;
+        private bool dpadUpProcessed = false;
+        private bool dpadDownProcessed = false;
+
+        // 新增：A键状态
+        private bool aButtonPressed = false;
+        private bool aButtonProcessed = false;
+
+        // INavigationPanel 接口实现
+        public string PanelName => panelName;
+        public int Priority => priority;
+        public bool IsActive => isActive && gameObject.activeInHierarchy;
+        public bool UseCustomNavigation => useCustomNavigation;
+        public GameObject DefaultSelection => defaultSelection;
+
+        #region Unity生命周期
+        private void Awake()
+        {
+            eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                eventSystem = FindObjectOfType<EventSystem>();
+            }
+
+            // 获取LogController引用
+            logController = GetComponent<LogController>();
+            if (logController == null)
+            {
+                logController = FindObjectOfType<LogController>();
+            }
+
+            if (!useLazyInitialization)
+            {
+                InitializeImmediate();
+            }
+
+            // 注册到导航管理器
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.RegisterPanel(this);
+            }
+        }
+
+        private void Start()
+        {
+            if (useLazyInitialization)
+            {
+                StartCoroutine(InitializeDelayed());
+            }
+
+            if (autoSelectOnEnable)
+            {
+                StartCoroutine(SelectLastEntryDelayed());
+            }
+        }
+
+        private void Update()
+        {
+            // 只在激活状态且使用手柄时处理输入
+            if (!isActive || !usingGamepad) return;
+
+            UpdateInputState();
+        }
+
+        private void OnEnable()
+        {
+            isActive = true;
+
+            if (!isInitialized)
+            {
+                StartCoroutine(InitializeDelayed());
+            }
+
+            if (autoSelectOnEnable)
+            {
+                StartCoroutine(SelectLastEntryDelayed());
+            }
+
+            StartPeriodicRefresh();
+        }
+
+        private void OnDisable()
+        {
+            isActive = false;
+            usingGamepad = false;
+
+            RestoreAllHighlights();
+            StopPeriodicRefresh();
+        }
+
+        private void OnDestroy()
+        {
+            // 从导航管理器注销
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.UnregisterPanel(this);
+            }
+
+            RestoreAllHighlights();
+            StopPeriodicRefresh();
+        }
+        #endregion
+
+        #region 初始化方法
+        /// <summary>
+        /// 立即初始化
+        /// </summary>
+        private void InitializeImmediate()
+        {
+            if (isInitialized) return;
+
+            RefreshVisibleEntries();
+            isInitialized = true;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 立即初始化完成");
+            }
+        }
+
+        /// <summary>
+        /// 延迟初始化
+        /// </summary>
+        private IEnumerator InitializeDelayed()
+        {
+            if (isInitialized) yield break;
+
+            yield return null; // 等待一帧
+            RefreshVisibleEntries();
+            isInitialized = true;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 延迟初始化完成");
+            }
+        }
+        #endregion
+
+        #region INavigationPanel 实现
+        /// <summary>
+        /// 面板激活时的处理
+        /// </summary>
+        public void OnPanelActivated()
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 面板激活");
+            }
+
+            isActive = true;
+            usingGamepad = true;
+
+            // 重置导航状态
+            lastNavigationTime = 0f;
+            dpadUpProcessed = false;
+            dpadDownProcessed = false;
+            aButtonProcessed = false;
+
+            // 延迟设置选中对象，确保UI布局完成
+            StartCoroutine(DelayedActivation());
+        }
+
+        private IEnumerator DelayedActivation()
+        {
+            yield return null; // 等待一帧，确保UI布局完成
+
+            if (!isInitialized)
+            {
+                RefreshVisibleEntries();
+                isInitialized = true;
+            }
+
+            // 设置初始选中
+            if (visibleEntries.Count > 0)
+            {
+                if (lastValidSelectedIndex >= 0 && lastValidSelectedIndex < visibleEntries.Count)
+                {
+                    SelectLogEntry(lastValidSelectedIndex);
+                }
+                else
+                {
+                    SelectLastEntry();
+                }
+            }
+
+            StartPeriodicRefresh();
+        }
+
+        /// <summary>
+        /// 面板停用时的处理
+        /// </summary>
+        public void OnPanelDeactivated()
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 面板停用");
+            }
+
+            isActive = false;
+            usingGamepad = false;
+
+            // 保存最后选中的索引
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                lastValidSelectedIndex = currentSelectedIndex;
+            }
+
+            RestoreAllHighlights();
+            StopPeriodicRefresh();
+        }
+
+        /// <summary>
+        /// 处理自定义导航逻辑 - 简化版本，只处理十字键
+        /// </summary>
+        public void HandleCustomNavigation()
+        {
+            if (!isActive || !usingGamepad) return;
+
+            CheckGamepadConnection();
+            CheckInputMode();
+
+            // 只处理十字键导航输入
+            CheckDPadNavigationInput();
+
+            // 处理右摇杆滚动
+            CheckScrollbarControl();
+
+            // 处理A键确认输入
+            CheckAButtonInput();
+
+            // 强制保持高亮状态
+            if (forceHighlightState && usingGamepad && currentSelectedIndex >= 0 &&
+                currentSelectedIndex < visibleEntries.Count && visibleEntries[currentSelectedIndex] != null)
+            {
+                SetEntryHighlight(visibleEntries[currentSelectedIndex], true);
+            }
+        }
+
+        /// <summary>
+        /// 是否忽略确认键输入
+        /// </summary>
+        public bool ShouldIgnoreSubmit()
+        {
+            return false;
+        }
+        #endregion
+
+        #region 输入处理
+        /// <summary>
+        /// 更新输入状态
+        /// </summary>
+        private void UpdateInputState()
+        {
+            if (Gamepad.current != null)
+            {
+                Vector2 dpad = Gamepad.current.dpad.ReadValue();
+
+                // 检测十字键按下状态
+                bool newDpadUp = dpad.y > 0.5f;
+                bool newDpadDown = dpad.y < -0.5f;
+
+                // 检测按钮按下（从未按到按下的瞬间）
+                if (newDpadUp && !dpadUpPressed)
+                {
+                    dpadUpPressed = true;
+                    dpadUpProcessed = false;
+                }
+                else if (!newDpadUp)
+                {
+                    dpadUpPressed = false;
+                    dpadUpProcessed = false;
+                }
+
+                if (newDpadDown && !dpadDownPressed)
+                {
+                    dpadDownPressed = true;
+                    dpadDownProcessed = false;
+                }
+                else if (!newDpadDown)
+                {
+                    dpadDownPressed = false;
+                    dpadDownProcessed = false;
+                }
+
+                // 新增：检测A键按下状态
+                bool newAButton = Gamepad.current.aButton.isPressed;
+                if (newAButton && !aButtonPressed)
+                {
+                    aButtonPressed = true;
+                    aButtonProcessed = false;
+                }
+                else if (!newAButton)
+                {
+                    aButtonPressed = false;
+                    aButtonProcessed = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检查十字键导航输入 - 简化版本
+        /// </summary>
+        private void CheckDPadNavigationInput()
+        {
+            if (!usingGamepad) return;
+
+            bool canNavigate = Time.unscaledTime - lastNavigationTime > navigationCooldown;
+            if (!canNavigate) return;
+
+            // 处理十字键上
+            if (dpadUpPressed && !dpadUpProcessed)
+            {
+                HandleVerticalNavigation(true);
+                lastNavigationTime = Time.unscaledTime;
+                dpadUpProcessed = true;
+            }
+            // 处理十字键下
+            else if (dpadDownPressed && !dpadDownProcessed)
+            {
+                HandleVerticalNavigation(false);
+                lastNavigationTime = Time.unscaledTime;
+                dpadDownProcessed = true;
+            }
+        }
+
+        /// <summary>
+        /// 新增：检查A键输入
+        /// </summary>
+        private void CheckAButtonInput()
+        {
+            if (!usingGamepad) return;
+
+            // 处理A键按下
+            if (aButtonPressed && !aButtonProcessed)
+            {
+                HandleAButtonPress();
+                aButtonProcessed = true;
+            }
+        }
+
+        /// <summary>
+        /// 新增：处理A键按下事件 - 回到节点
+        /// </summary>
+        private void HandleAButtonPress()
+        {
+            if (currentSelectedIndex < 0 || currentSelectedIndex >= visibleEntries.Count)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[LogNavigationController] 无法处理A键按下：当前选中索引无效 {currentSelectedIndex}");
+                }
+                return;
+            }
+
+            GameObject selectedEntry = visibleEntries[currentSelectedIndex];
+            if (selectedEntry == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[LogNavigationController] 无法处理A键按下：选中条目为null");
+                }
+                return;
+            }
+
+            // 查找GoBackButton
+            Transform goBackButtonTransform = selectedEntry.transform.Find("Text/GoBackButton");
+            if (goBackButtonTransform == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[LogNavigationController] 无法处理A键按下：未找到GoBackButton");
+                }
+                return;
+            }
+
+            Button goBackButton = goBackButtonTransform.GetComponent<Button>();
+            if (goBackButton == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[LogNavigationController] 无法处理A键按下：GoBackButton上未找到Button组件");
+                }
+                return;
+            }
+
+            if (goBackButton.gameObject.activeInHierarchy && goBackButton.interactable)
+            {
+                goBackButton.onClick.Invoke();
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[LogNavigationController] 手柄A键触发回到节点: {currentSelectedIndex}");
+                }
+            }
+            else
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[LogNavigationController] 无法处理A键按下：GoBackButton未激活或不可交互");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理滚动条控制
+        /// </summary>
+        private void CheckScrollbarControl()
+        {
+            if (scrollRect == null) return;
+
+            // 使用右摇杆控制滚动
+            if (Gamepad.current != null)
+            {
+                Vector2 rightStick = Gamepad.current.rightStick.ReadValue();
+
+                // 添加死区，避免微小移动
+                if (Mathf.Abs(rightStick.y) > 0.2f)
+                {
+                    // 直接设置滚动位置
+                    float currentPos = scrollRect.verticalNormalizedPosition;
+                    float scrollDelta = -rightStick.y * scrollSpeed * Time.unscaledDeltaTime;
+                    float newPos = Mathf.Clamp01(currentPos + scrollDelta);
+
+                    scrollRect.verticalNormalizedPosition = newPos;
+
+                    // 滚动后刷新可见条目
+                    if (Time.frameCount % 5 == 0) // 每5帧刷新一次，避免性能问题
+                    {
+                        RefreshVisibleEntries();
+                        UpdateSelectionAfterScroll();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理垂直导航
+        /// </summary>
+        private void HandleVerticalNavigation(bool moveUp)
+        {
+            if (visibleEntries.Count == 0) return;
+
+            int newIndex = currentSelectedIndex;
+
+            // 确保索引有效
+            if (newIndex < 0 || newIndex >= visibleEntries.Count)
+            {
+                newIndex = moveUp ? visibleEntries.Count - 1 : 0;
+            }
+
+            // 计算新索引 - 在当前可见页面内循环
+            if (moveUp)
+            {
+                newIndex--;
+                if (newIndex < 0)
+                {
+                    newIndex = visibleEntries.Count - 1;
+                }
+            }
+            else
+            {
+                newIndex++;
+                if (newIndex >= visibleEntries.Count)
+                {
+                    newIndex = 0;
+                }
+            }
+
+            SelectLogEntry(newIndex);
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 导航: {(moveUp ? "上" : "下")}, 从 {currentSelectedIndex} 到 {newIndex}");
+            }
+        }
+        #endregion
+
+        #region 条目选择和高亮管理
+        /// <summary>
+        /// 选择日志条目
+        /// </summary>
+        public void SelectLogEntry(int index)
+        {
+            if (index < 0 || index >= visibleEntries.Count || visibleEntries[index] == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[LogNavigationController] 尝试选择无效的日志索引: {index}");
+                }
+                return;
+            }
+
+            // 取消之前的高亮
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                SetEntryHighlight(visibleEntries[currentSelectedIndex], false);
+            }
+
+            // 设置新的高亮
+            currentSelectedIndex = index;
+            lastValidSelectedIndex = index;
+            SetEntryHighlight(visibleEntries[currentSelectedIndex], true);
+
+            // 确保选中的条目在视图中（滚动调整）
+            EnsureEntryVisible(index);
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 选中日志条目: {index}");
+            }
+        }
+
+        /// <summary>
+        /// 选择最后一个条目
+        /// </summary>
+        public void SelectLastEntry()
+        {
+            if (visibleEntries.Count > 0)
+            {
+                SelectLogEntry(visibleEntries.Count - 1);
+            }
+        }
+
+        /// <summary>
+        /// 确保条目在视图中可见
+        /// </summary>
+        private void EnsureEntryVisible(int index)
+        {
+            if (scrollRect == null) return;
+            if (index < 0 || index >= visibleEntries.Count) return;
+
+            // 这里可以添加逻辑来确保选中的条目在视图中央
+            // 由于我们使用可见条目管理，选中的条目应该已经在视图中
+        }
+
+        /// <summary>
+        /// 滚动后更新选择
+        /// </summary>
+        private void UpdateSelectionAfterScroll()
+        {
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                // 重新应用高亮，确保状态正确
+                SetEntryHighlight(visibleEntries[currentSelectedIndex], true);
+            }
+            else if (visibleEntries.Count > 0)
+            {
+                // 如果当前选择无效，选择第一个可见条目
+                SelectLogEntry(0);
+            }
+        }
+        #endregion
+
+        #region 可见条目管理
+        /// <summary>
+        /// 刷新可见条目列表
+        /// </summary>
+        public void RefreshVisibleEntries()
+        {
+            // 恢复所有高亮
+            RestoreAllHighlights();
+
+            visibleEntries.Clear();
+            originalTextColors.Clear();
+            originalBackgroundColors.Clear();
+
+            // 获取当前可见的条目
+            if (scrollRect != null && scrollRect.content != null)
+            {
+                for (int i = 0; i < scrollRect.content.childCount; i++)
+                {
+                    GameObject child = scrollRect.content.GetChild(i).gameObject;
+                    if (child.activeInHierarchy && child.GetComponent<LogEntryController>() != null)
+                    {
+                        visibleEntries.Add(child);
+                        PrepareEntryForHighlight(child);
+                    }
+                }
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 刷新可见条目，找到 {visibleEntries.Count} 个条目");
+            }
+
+            // 重置选中索引
+            if (currentSelectedIndex >= visibleEntries.Count ||
+                (currentSelectedIndex >= 0 && visibleEntries[currentSelectedIndex] == null))
+            {
+                currentSelectedIndex = -1;
+                lastValidSelectedIndex = -1;
+            }
+        }
+
+        /// <summary>
+        /// 为条目准备高亮效果
+        /// </summary>
+        private void PrepareEntryForHighlight(GameObject entry)
+        {
+            if (entry == null) return;
+
+            // 保存原始文本颜色
+            if (!originalTextColors.ContainsKey(entry))
+            {
+                List<Color> textColors = new List<Color>();
+
+                // 收集普通Text组件
+                Text[] texts = entry.GetComponentsInChildren<Text>(true);
+                foreach (Text text in texts)
+                {
+                    if (text != null)
+                    {
+                        textColors.Add(text.color);
+                    }
+                }
+
+                // 收集TextMeshPro组件
+                TextMeshProUGUI[] tmpTexts = entry.GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (TextMeshProUGUI tmp in tmpTexts)
+                {
+                    if (tmp != null)
+                    {
+                        textColors.Add(tmp.color);
+                    }
+                }
+
+                originalTextColors[entry] = textColors.ToArray();
+            }
+
+            // 保存原始背景颜色
+            if (!originalBackgroundColors.ContainsKey(entry))
+            {
+                Image bg = entry.GetComponent<Image>();
+                if (bg != null)
+                {
+                    originalBackgroundColors[entry] = bg.color;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设置条目高亮状态
+        /// </summary>
+        private void SetEntryHighlight(GameObject entry, bool highlight)
+        {
+            if (entry == null) return;
+
+            switch (highlightMode)
+            {
+                case HighlightMode.TextColor:
+                    SetTextColorHighlight(entry, highlight);
+                    break;
+                case HighlightMode.Background:
+                    SetBackgroundHighlight(entry, highlight);
+                    break;
+                case HighlightMode.Multiple:
+                    SetTextColorHighlight(entry, highlight);
+                    SetBackgroundHighlight(entry, highlight);
+                    break;
+                default:
+                    SetTextColorHighlight(entry, highlight);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 设置文本颜色高亮
+        /// </summary>
+        private void SetTextColorHighlight(GameObject entry, bool highlight)
+        {
+            if (entry == null) return;
+
+            if (highlight)
+            {
+                // 设置文本高亮颜色
+                Text[] texts = entry.GetComponentsInChildren<Text>(true);
+                foreach (Text text in texts)
+                {
+                    if (text != null)
+                    {
+                        text.color = textHighlightColor;
+                    }
+                }
+
+                TextMeshProUGUI[] tmpTexts = entry.GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (TextMeshProUGUI tmp in tmpTexts)
+                {
+                    if (tmp != null)
+                    {
+                        tmp.color = textHighlightColor;
+                    }
+                }
+            }
+            else
+            {
+                // 恢复文本原始颜色
+                if (originalTextColors.ContainsKey(entry))
+                {
+                    Color[] originalColors = originalTextColors[entry];
+                    int colorIndex = 0;
+
+                    Text[] texts = entry.GetComponentsInChildren<Text>(true);
+                    foreach (Text text in texts)
+                    {
+                        if (text != null && colorIndex < originalColors.Length)
+                        {
+                            text.color = originalColors[colorIndex++];
+                        }
+                    }
+
+                    TextMeshProUGUI[] tmpTexts = entry.GetComponentsInChildren<TextMeshProUGUI>(true);
+                    foreach (TextMeshProUGUI tmp in tmpTexts)
+                    {
+                        if (tmp != null && colorIndex < originalColors.Length)
+                        {
+                            tmp.color = originalColors[colorIndex++];
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 设置背景高亮
+        /// </summary>
+        private void SetBackgroundHighlight(GameObject entry, bool highlight)
+        {
+            if (entry == null) return;
+
+            Image bg = entry.GetComponent<Image>();
+            if (bg != null)
+            {
+                if (highlight)
+                {
+                    bg.color = backgroundHighlightColor;
+                }
+                else if (originalBackgroundColors.ContainsKey(entry))
+                {
+                    bg.color = originalBackgroundColors[entry];
+                }
+            }
+        }
+
+        /// <summary>
+        /// 恢复所有高亮效果
+        /// </summary>
+        private void RestoreAllHighlights()
+        {
+            foreach (GameObject entry in visibleEntries)
+            {
+                if (entry != null)
+                {
+                    SetEntryHighlight(entry, false);
+                }
+            }
+        }
+        #endregion
+
+        #region 输入模式管理
+        /// <summary>
+        /// 检查游戏手柄连接状态
+        /// </summary>
+        private void CheckGamepadConnection()
+        {
+            bool isGamepadConnected = Gamepad.current != null;
+
+            if (isGamepadConnected != wasGamepadConnected)
+            {
+                wasGamepadConnected = isGamepadConnected;
+
+                if (isGamepadConnected && gamepadPriority)
+                {
+                    usingGamepad = true;
+                    OnGamepadActivated();
+                }
+                else if (!isGamepadConnected)
+                {
+                    usingGamepad = false;
+                    OnGamepadDeactivated();
+                }
+            }
+            else if (isGamepadConnected && !usingGamepad && gamepadPriority)
+            {
+                usingGamepad = true;
+                OnGamepadActivated();
+            }
+        }
+
+        /// <summary>
+        /// 检查输入模式
+        /// </summary>
+        private void CheckInputMode()
+        {
+            // 只在每几帧检查一次，减少性能开销
+            if (Time.frameCount % 3 != 0) return;
+
+            // 检查鼠标输入
+            if (gamepadPriority && usingGamepad && Mouse.current != null)
+            {
+                Vector2 mouseDelta = Mouse.current.delta.ReadValue();
+                if (mouseDelta.magnitude > 0.1f || Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[LogNavigationController] 检测到鼠标输入，切换到键鼠模式");
+                    }
+                    usingGamepad = false;
+                    OnGamepadDeactivated();
+                }
+            }
+
+            // 检查手柄输入
+            if (gamepadPriority && !usingGamepad && Gamepad.current != null)
+            {
+                Vector2 dpad = Gamepad.current.dpad.ReadValue();
+                bool anyButtonPressed = Gamepad.current.aButton.wasPressedThisFrame ||
+                                      Gamepad.current.bButton.wasPressedThisFrame ||
+                                      Gamepad.current.xButton.wasPressedThisFrame ||
+                                      Gamepad.current.yButton.wasPressedThisFrame;
+
+                if (dpad != Vector2.zero || anyButtonPressed)
+                {
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[LogNavigationController] 检测到手柄输入，切换到手柄模式");
+                    }
+                    usingGamepad = true;
+                    OnGamepadActivated();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 手柄模式激活
+        /// </summary>
+        private void OnGamepadActivated()
+        {
+            if (!isActive) return;
+
+            Cursor.visible = false;
+
+            if (lastValidSelectedIndex >= 0 && lastValidSelectedIndex < visibleEntries.Count)
+            {
+                SelectLogEntry(lastValidSelectedIndex);
+            }
+            else if (visibleEntries.Count > 0)
+            {
+                SelectLastEntry();
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 切换到手柄模式");
+            }
+        }
+
+        /// <summary>
+        /// 手柄模式停用
+        /// </summary>
+        private void OnGamepadDeactivated()
+        {
+            Cursor.visible = true;
+
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                lastValidSelectedIndex = currentSelectedIndex;
+            }
+
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                SetEntryHighlight(visibleEntries[currentSelectedIndex], false);
+                currentSelectedIndex = -1;
+            }
+
+            // 重置输入状态
+            dpadUpPressed = false;
+            dpadDownPressed = false;
+            dpadUpProcessed = false;
+            dpadDownProcessed = false;
+            aButtonPressed = false;
+            aButtonProcessed = false;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[LogNavigationController] 切换到键鼠模式");
+            }
+        }
+        #endregion
+
+        #region 协程管理
+        /// <summary>
+        /// 延迟选择最后一个条目
+        /// </summary>
+        private IEnumerator SelectLastEntryDelayed()
+        {
+            yield return new WaitForEndOfFrame();
+            yield return new WaitForSeconds(0.1f);
+
+            if (visibleEntries.Count > 0)
+            {
+                SelectLastEntry();
+            }
+        }
+
+        /// <summary>
+        /// 启动定期刷新
+        /// </summary>
+        private void StartPeriodicRefresh()
+        {
+            StopPeriodicRefresh();
+            refreshCoroutine = StartCoroutine(PeriodicRefreshCoroutine());
+        }
+
+        /// <summary>
+        /// 停止定期刷新
+        /// </summary>
+        private void StopPeriodicRefresh()
+        {
+            if (refreshCoroutine != null)
+            {
+                StopCoroutine(refreshCoroutine);
+                refreshCoroutine = null;
+            }
+        }
+
+        /// <summary>
+        /// 定期刷新协程
+        /// </summary>
+        private IEnumerator PeriodicRefreshCoroutine()
+        {
+            WaitForSeconds waitInterval = new WaitForSeconds(1f); // 每秒刷新一次
+
+            while (isActive)
+            {
+                yield return waitInterval;
+
+                // 刷新可见条目
+                RefreshVisibleEntries();
+
+                // 如果当前选择无效但有条目，重新选择
+                if (currentSelectedIndex == -1 && visibleEntries.Count > 0)
+                {
+                    SelectLastEntry();
+                }
+            }
+        }
+        #endregion
+
+        #region 公共API
+        /// <summary>
+        /// 获取当前选中的日志条目索引
+        /// </summary>
+        public int GetCurrentSelectedIndex()
+        {
+            return currentSelectedIndex;
+        }
+
+        /// <summary>
+        /// 获取当前选中的日志条目
+        /// </summary>
+        public GameObject GetCurrentSelectedEntry()
+        {
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                return visibleEntries[currentSelectedIndex];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 设置高亮模式
+        /// </summary>
+        public void SetHighlightMode(HighlightMode mode)
+        {
+            if (highlightMode != mode)
+            {
+                highlightMode = mode;
+                RefreshVisibleEntries();
+
+                if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+                {
+                    SetEntryHighlight(visibleEntries[currentSelectedIndex], true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 手动刷新可见条目
+        /// </summary>
+        [ContextMenu("手动刷新可见条目")]
+        public void ManualRefreshVisibleEntries()
+        {
+            RefreshVisibleEntries();
+
+            if (usingGamepad && visibleEntries.Count > 0 && currentSelectedIndex == -1)
+            {
+                SelectLastEntry();
+            }
+        }
+
+        /// <summary>
+        /// 强制重新选中最后有效的条目
+        /// </summary>
+        public void ForceReselectLastValid()
+        {
+            if (lastValidSelectedIndex >= 0 && lastValidSelectedIndex < visibleEntries.Count)
+            {
+                SelectLogEntry(lastValidSelectedIndex);
+            }
+            else if (visibleEntries.Count > 0)
+            {
+                SelectLastEntry();
+            }
+        }
+
+        /// <summary>
+        /// 手动设置滚动条组件
+        /// </summary>
+        public void SetScrollRect(LoopVerticalScrollRectWithSwitch newScrollRect)
+        {
+            scrollRect = newScrollRect;
+            RefreshVisibleEntries();
+        }
+
+        /// <summary>
+        /// 获取可见条目总数
+        /// </summary>
+        public int GetVisibleEntryCount()
+        {
+            return visibleEntries.Count;
+        }
+
+        /// <summary>
+        /// 检查是否已初始化
+        /// </summary>
+        public bool IsInitialized()
+        {
+            return isInitialized;
+        }
+
+        /// <summary>
+        /// 新增：手动触发A键功能（用于测试）
+        /// </summary>
+        [ContextMenu("测试A键功能")]
+        public void TestAButtonFunction()
+        {
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < visibleEntries.Count)
+            {
+                HandleAButtonPress();
+            }
+            else
+            {
+                Debug.LogWarning($"[LogNavigationController] 无法测试A键功能：没有选中的条目");
+            }
+        }
+        #endregion
+
+        #region 调试方法
+        [ContextMenu("打印当前状态")]
+        public void PrintCurrentStatus()
+        {
+            Debug.Log($"[LogNavigationController] 状态报告:");
+            Debug.Log($"- 可见条目总数: {visibleEntries.Count}");
+            Debug.Log($"- 当前选中索引: {currentSelectedIndex}");
+            Debug.Log($"- 最后有效索引: {lastValidSelectedIndex}");
+            Debug.Log($"- 活动状态: {isActive}");
+            Debug.Log($"- 使用手柄: {usingGamepad}");
+            Debug.Log($"- 高亮模式: {highlightMode}");
+            Debug.Log($"- 滚动条组件: {(scrollRect != null ? "已分配" : "未分配")}");
+            Debug.Log($"- 滚动条位置: {(scrollRect != null ? scrollRect.verticalNormalizedPosition.ToString("F2") : "N/A")}");
+            Debug.Log($"- 初始化状态: {isInitialized}");
+            Debug.Log($"- A键状态: 按下={aButtonPressed}, 已处理={aButtonProcessed}");
+
+            for (int i = Mathf.Max(0, currentSelectedIndex - 2); i < Mathf.Min(visibleEntries.Count, currentSelectedIndex + 3); i++)
+            {
+                if (i >= 0 && i < visibleEntries.Count)
+                {
+                    string status = (i == currentSelectedIndex) ? "[选中]" : "";
+                    Debug.Log($"- 可见条目 {i}: {visibleEntries[i]?.name ?? "null"} {status}");
+                }
+            }
+        }
+
+        [ContextMenu("选中最后一个条目")]
+        public void DebugSelectLast()
+        {
+            if (visibleEntries.Count > 0)
+            {
+                SelectLastEntry();
+            }
+        }
+        #endregion
+
+        // 配置
+        private bool useLazyInitialization = true;
+    }
+}
+
+
+============================================================
+文件: MainMenuNavigationPanel.cs
+============================================================
+
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+namespace Nova
+{
+    public class MainMenuNavigationPanel : BaseNavigationPanel
+    {
+        // 主界面配置
+        public override string PanelName => "MainMenu";
+        public override int Priority => PanelPriority.MAIN_MENU;
+        public override bool UseCustomNavigation => false;
+
+        protected override void Start()
+        {
+            // 调用基类的Start方法，会自动收集Selectable
+            base.Start();
+        }
+
+        /// <summary>
+        /// 面板激活时的处理
+        /// </summary>
+        public override void OnPanelActivated()
+        {
+            base.OnPanelActivated();
+        }
+
+        /// <summary>
+        /// 面板停用时的处理
+        /// </summary>
+        public override void OnPanelDeactivated()
+        {
+            base.OnPanelDeactivated();
+        }
+
+        /// <summary>
+        /// 处理自定义导航（主界面使用默认导航，所以这里为空）
+        /// </summary>
+        public override void HandleCustomNavigation()
+        {
+            // 主界面使用默认导航逻辑，不需要自定义处理
+        }
+
+        /// <summary>
+        /// 是否忽略确认键输入
+        /// </summary>
+        public override bool ShouldIgnoreSubmit()
+        {
+            // 主界面不需要忽略确认键
+            return false;
+        }
+    }
+}
+
+
+============================================================
+文件: NotificationNavigationPanel.cs
+============================================================
+
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+
+namespace Nova
+{
+    public class NotificationNavigationPanel : BaseNavigationPanel
+    {
+        // 通知界面配置
+        public override string PanelName => "Notification";
+        public override int Priority => PanelPriority.NOTIFICATION;
+        public override bool UseCustomNavigation => false;
+
+        protected override void Start()
+        {
+            // 调用基类的Start方法，会自动收集Selectable
+            base.Start();
+        }
+
+        /// <summary>
+        /// 面板激活时的处理
+        /// </summary>
+        public override void OnPanelActivated()
+        {
+            base.OnPanelActivated();
+        }
+
+        /// <summary>
+        /// 面板停用时的处理
+        /// </summary>
+        public override void OnPanelDeactivated()
+        {
+            base.OnPanelDeactivated();
+        }
+
+        /// <summary>
+        /// 处理自定义导航（通知界面使用默认导航，所以这里为空）
+        /// </summary>
+        public override void HandleCustomNavigation()
+        {
+            // 通知界面使用默认导航逻辑，不需要自定义处理
+        }
+
+        /// <summary>
+        /// 是否忽略确认键输入
+        /// </summary>
+        public override bool ShouldIgnoreSubmit()
+        {
+            // 通知界面不需要忽略确认键
+            return false;
+        }
+    }
+}
+
+
+============================================================
+文件: SettingsNavigationPanel.cs
+============================================================
+
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Nova
+{
+    public class SettingsNavigationPanel : BaseNavigationPanel
+    {
+        [Header("设置界面特殊设置")]
+        [SerializeField] private bool rememberToggleState = true;
+        [SerializeField] private bool autoSetupNavigation = true;
+
+        // 直接使用导航管理器的保护机制
+        private GameObject currentSelectedObject;
+        private GameObject lastSelectedObject;
+
+        // 存储所有可交互元素
+        private List<Selectable> allSelectables = new List<Selectable>();
+
+        // 设置界面配置
+        public override string PanelName => "Settings";
+        public override int Priority => PanelPriority.SETTINGS;
+        public override bool UseCustomNavigation => false;
+
+        protected override void Start()
+        {
+            base.Start();
+            CollectAllSelectables();
+            SetupExplicitNavigation();
+
+            // 初始化选中对象
+            lastSelectedObject = defaultSelection;
+        }
+
+        /// <summary>
+        /// 收集所有可交互元素并排序
+        /// </summary>
+        private void CollectAllSelectables()
+        {
+            allSelectables.Clear();
+
+            // 收集所有类型的可交互元素
+            var buttons = GetComponentsInChildren<Button>(true).Where(b => IsSelectableValid(b));
+            var toggles = GetComponentsInChildren<Toggle>(true).Where(t => IsSelectableValid(t));
+            var sliders = GetComponentsInChildren<Slider>(true).Where(s => IsSelectableValid(s));
+
+            // 合并并排序
+            allSelectables.AddRange(buttons.Cast<Selectable>());
+            allSelectables.AddRange(toggles.Cast<Selectable>());
+            allSelectables.AddRange(sliders.Cast<Selectable>());
+
+            // 按Hierarchy顺序排序
+            allSelectables = allSelectables
+                .OrderBy(s => GetDepth(s.transform))
+                .ThenBy(s => s.transform.GetSiblingIndex())
+                .ToList();
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[SettingsNavigationPanel] 收集到 {allSelectables.Count} 个可交互元素");
+            }
+        }
+
+        /// <summary>
+        /// 设置显式导航（与原代码一致）
+        /// </summary>
+        private void SetupExplicitNavigation()
+        {
+            if (!autoSetupNavigation) return;
+
+            for (int i = 0; i < allSelectables.Count; i++)
+            {
+                var current = allSelectables[i];
+                if (current == null) continue;
+
+                Navigation navigation = current.navigation;
+                navigation.mode = Navigation.Mode.Explicit;
+
+                // 设置上下导航（循环导航）
+                if (allSelectables.Count > 1)
+                {
+                    int upIndex = i > 0 ? i - 1 : allSelectables.Count - 1;
+                    int downIndex = i < allSelectables.Count - 1 ? i + 1 : 0;
+
+                    navigation.selectOnUp = allSelectables[upIndex];
+                    navigation.selectOnDown = allSelectables[downIndex];
+                }
+                else
+                {
+                    navigation.selectOnUp = null;
+                    navigation.selectOnDown = null;
+                }
+
+                // 左右导航保持为空，使用默认行为
+                navigation.selectOnLeft = null;
+                navigation.selectOnRight = null;
+
+                current.navigation = navigation;
+
+                // 确保Toggle和Slider可以交互
+                EnsureSelectableInteractable(current);
+            }
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[SettingsNavigationPanel] 显式导航设置完成");
+            }
+        }
+
+        /// <summary>
+        /// 确保Selectable可交互（与原代码逻辑一致）
+        /// </summary>
+        private void EnsureSelectableInteractable(Selectable selectable)
+        {
+            if (selectable == null) return;
+
+            // 对于Toggle和Slider，确保它们可以交互
+            if ((selectable is Toggle || selectable is Slider) && !selectable.interactable)
+            {
+                selectable.interactable = true;
+            }
+
+            // 确保有颜色过渡
+            if (selectable.transition == Selectable.Transition.None)
+            {
+                selectable.transition = Selectable.Transition.ColorTint;
+            }
+        }
+
+        /// <summary>
+        /// 面板激活时的处理（复现原代码的激活逻辑）
+        /// </summary>
+        public override void OnPanelActivated()
+        {
+            base.OnPanelActivated();
+
+            // 重新收集和设置导航
+            CollectAllSelectables();
+            SetupExplicitNavigation();
+
+            // 延迟设置选中对象，确保UI布局完成
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.IsUsingGamepad())
+            {
+                StartCoroutine(DelayedActivation());
+            }
+        }
+
+        private System.Collections.IEnumerator DelayedActivation()
+        {
+            yield return null; // 等待一帧，确保UI布局完成
+
+            GameObject targetObject = GetTargetSelection();
+
+            if (targetObject != null)
+            {
+                // 使用导航管理器的SetSelectedObject，它会处理Toggle/Slider的特殊逻辑
+                GamePadNavigationManager.Instance.SetSelectedObjectWithPanelNotify(targetObject);
+                currentSelectedObject = targetObject;
+
+                if (GamePadNavigationManager.Instance.enableDebugLogs)
+                {
+                    Debug.Log($"[SettingsNavigationPanel] 激活面板，选中: {targetObject.name}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取目标选中对象（复现原代码的选择逻辑）
+        /// </summary>
+        private GameObject GetTargetSelection()
+        {
+            // 1. 首先尝试最后选中的对象
+            if (rememberToggleState && lastSelectedObject != null && lastSelectedObject.activeInHierarchy)
+            {
+                var selectable = lastSelectedObject.GetComponent<Selectable>();
+                if (selectable != null && IsSelectableInteractable(selectable))
+                {
+                    return lastSelectedObject;
+                }
+            }
+
+            // 2. 尝试默认选中对象
+            if (defaultSelection != null && defaultSelection.activeInHierarchy)
+            {
+                var selectable = defaultSelection.GetComponent<Selectable>();
+                if (selectable != null && IsSelectableInteractable(selectable))
+                {
+                    return defaultSelection;
+                }
+            }
+
+            // 3. 使用第一个可交互元素
+            foreach (var selectable in allSelectables)
+            {
+                if (selectable != null && IsSelectableInteractable(selectable) && selectable.gameObject.activeInHierarchy)
+                {
+                    return selectable.gameObject;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// 面板停用时的处理
+        /// </summary>
+        public override void OnPanelDeactivated()
+        {
+            base.OnPanelDeactivated();
+
+            // 保存最后选中的对象
+            if (currentSelectedObject != null)
+            {
+                lastSelectedObject = currentSelectedObject;
+            }
+
+            currentSelectedObject = null;
+        }
+
+        /// <summary>
+        /// 处理自定义导航
+        /// </summary>
+        public override void HandleCustomNavigation()
+        {
+            // 设置界面使用默认导航
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.IsUsingGamepad())
+            {
+                // 确保当前选中对象保持高亮
+                var currentSelected = GamePadNavigationManager.Instance.GetCurrentSelectedGameObject();
+                if (currentSelected != currentSelectedObject && currentSelected != null)
+                {
+                    UpdateCurrentSelection(currentSelected);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 是否忽略确认键输入 - 现在完全由GamePadNavigationManager处理
+        /// </summary>
+        public override bool ShouldIgnoreSubmit()
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// 更新当前选中对象（由导航管理器调用）
+        /// </summary>
+        public void UpdateCurrentSelection(GameObject selectedObject)
+        {
+            currentSelectedObject = selectedObject;
+            if (selectedObject != null)
+            {
+                lastSelectedObject = selectedObject;
+            }
+        }
+
+        /// <summary>
+        /// 检查对象是否可选中（与原代码一致）
+        /// </summary>
+        private bool IsSelectableValid(Selectable selectable)
+        {
+            if (selectable == null) return false;
+
+            // 对于Toggle和Slider，只要游戏对象激活就认为有效
+            if (selectable is Toggle || selectable is Slider)
+            {
+                return selectable.gameObject.activeInHierarchy;
+            }
+
+            // 对于其他Selectable，需要可交互且激活
+            return selectable.interactable && selectable.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>
+        /// 检查Selectable是否可交互
+        /// </summary>
+        private bool IsSelectableInteractable(Selectable selectable)
+        {
+            if (selectable == null) return false;
+
+            // 对于Toggle和Slider，我们更宽松一些
+            if (selectable is Toggle || selectable is Slider)
+            {
+                return selectable.gameObject.activeInHierarchy;
+            }
+
+            return selectable.interactable && selectable.gameObject.activeInHierarchy;
+        }
+
+        /// <summary>
+        /// 获取Transform在层级中的深度
+        /// </summary>
+        private int GetDepth(Transform transform)
+        {
+            int depth = 0;
+            while (transform.parent != null && transform.parent != this.transform)
+            {
+                depth++;
+                transform = transform.parent;
+            }
+            return depth;
+        }
+
+        /// <summary>
+        /// 手动刷新导航（用于动态UI更新）
+        /// </summary>
+        public void ManualRefreshNavigation()
+        {
+            CollectAllSelectables();
+            SetupExplicitNavigation();
+
+            if (GamePadNavigationManager.Instance != null && GamePadNavigationManager.Instance.enableDebugLogs)
+            {
+                Debug.Log($"[SettingsNavigationPanel] 手动刷新导航完成");
+            }
+        }
+
+        // 调试方法
+        [ContextMenu("调试打印导航信息")]
+        public void DebugPrintNavigationInfo()
+        {
+            Debug.Log($"[SettingsNavigationPanel] 导航信息:");
+            Debug.Log($"- 当前选中: {currentSelectedObject?.name ?? "无"}");
+            Debug.Log($"- 最后选中: {lastSelectedObject?.name ?? "无"}");
+            Debug.Log($"- 默认选中: {defaultSelection?.name ?? "无"}");
+            Debug.Log($"- 可交互元素数量: {allSelectables.Count}");
+        }
+
+        [ContextMenu("手动触发导航设置")]
+        public void ManualTriggerNavigationSetup()
+        {
+            CollectAllSelectables();
+            SetupExplicitNavigation();
+            Debug.Log($"[SettingsNavigationPanel] 手动触发导航设置完成");
+        }
+    }
+}
+
+
+============================================================
+文件: TitleSelectionNavigationPanel.cs
+============================================================
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+namespace Nova
+{
+    public class TitleSelectionNavigationPanel : MonoBehaviour, INavigationPanel
+    {
+        [Header("导航设置")]
+        [Tooltip("导航输入冷却时间（秒）")]
+        [SerializeField] private float navigationCooldown = 0.3f;
+        [Tooltip("启用调试日志")]
+        [SerializeField] private bool enableDebugLogs = false;
+
+        [Header("面板设置")]
+        [Tooltip("面板名称")]
+        [SerializeField] private string panelName = "TitleSelectionPanel";
+        [Tooltip("面板优先级")]
+        [SerializeField] private int priority = PanelPriority.SELECT_TITLE; // 最高优先级
+        [Tooltip("使用自定义导航")]
+        [SerializeField] private bool useCustomNavigation = true;
+
+        // 私有字段
+        private int currentSelectedIndex = -1;
+        private float lastNavigationTime;
+        private bool isActive = false;
+        private bool usingGamepad = false;
+        private bool isFirstNavigation = true;
+
+        // 按钮管理
+        private List<Button> titleButtons = new List<Button>();
+        private Button firstButton;
+        private bool buttonsNeedRefresh = true;
+        private bool isPanelVisible = false;
+
+        // 视觉状态管理
+        private bool hasUserNavigated = false;
+        private InputMode currentInputMode = InputMode.KeyboardMouse;
+
+        // INavigationPanel 接口实现
+        public string PanelName => panelName;
+        public int Priority => priority;
+        public bool IsActive => isActive && gameObject.activeInHierarchy;
+        public bool UseCustomNavigation => useCustomNavigation;
+        public GameObject DefaultSelection => firstButton != null ? firstButton.gameObject : null;
+
+        #region Unity生命周期
+        private void Awake()
+        {
+            // 注册到导航管理器
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.RegisterPanel(this);
+                GamePadNavigationManager.Instance.OnInputModeChanged += OnInputModeChanged;
+            }
+        }
+
+        private void Start()
+        {
+            // 立即开始监控按钮变化
+            StartCoroutine(MonitorTitleButtons());
+        }
+
+        private void Update()
+        {
+            // 只在激活状态且使用手柄时处理输入
+            if (!isActive || !usingGamepad) return;
+
+            UpdateInputState();
+        }
+
+        private void OnEnable()
+        {
+            isActive = true;
+
+            // 标记需要刷新按钮
+            buttonsNeedRefresh = true;
+            isPanelVisible = true;
+            isFirstNavigation = true;
+            hasUserNavigated = false;
+
+            // 获取当前输入模式
+            if (GamePadNavigationManager.Instance != null)
+            {
+                currentInputMode = GamePadNavigationManager.Instance.GetCurrentInputMode();
+                usingGamepad = (currentInputMode == InputMode.Gamepad);
+            }
+
+            // 刷新按钮
+            RefreshTitleButtons();
+
+            // 只有手柄模式下才清除视觉选中状态
+            if (usingGamepad)
+            {
+                ClearAllVisualSelections();
+            }
+        }
+
+        private void OnDisable()
+        {
+            isActive = false;
+            usingGamepad = false;
+            currentSelectedIndex = -1;
+            isPanelVisible = false;
+            isFirstNavigation = true;
+            hasUserNavigated = false;
+
+            // 清除所有视觉选中状态
+            ClearAllVisualSelections();
+        }
+
+        private void OnDestroy()
+        {
+            // 从导航管理器注销
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.UnregisterPanel(this);
+                GamePadNavigationManager.Instance.OnInputModeChanged -= OnInputModeChanged;
+            }
+
+            StopAllCoroutines();
+        }
+
+        /// <summary>
+        /// 输入模式变化时的回调
+        /// </summary>
+        private void OnInputModeChanged(InputMode newMode)
+        {
+            currentInputMode = newMode;
+            bool wasUsingGamepad = usingGamepad;
+            usingGamepad = (newMode == InputMode.Gamepad);
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 输入模式变化: {newMode}, 使用手柄: {usingGamepad}");
+            }
+
+            // 如果从手柄模式切换到键鼠模式
+            if (wasUsingGamepad && !usingGamepad)
+            {
+                ClearAllVisualSelections();
+                hasUserNavigated = false;
+                isFirstNavigation = true;
+            }
+            // 如果从键鼠模式切换到手柄模式
+            else if (!wasUsingGamepad && usingGamepad)
+            {
+                hasUserNavigated = false;
+                isFirstNavigation = true;
+                ClearAllVisualSelections();
+            }
+        }
+        #endregion
+
+        #region INavigationPanel 实现
+        /// <summary>
+        /// 面板激活时的处理
+        /// </summary>
+        public void OnPanelActivated()
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 面板激活 - 最高优先级面板");
+            }
+
+            isActive = true;
+
+            // 更新输入模式
+            if (GamePadNavigationManager.Instance != null)
+            {
+                currentInputMode = GamePadNavigationManager.Instance.GetCurrentInputMode();
+                usingGamepad = (currentInputMode == InputMode.Gamepad);
+            }
+
+            isPanelVisible = true;
+
+            // 重置导航状态
+            lastNavigationTime = 0f;
+            isFirstNavigation = true;
+            hasUserNavigated = false;
+
+            // 刷新按钮
+            RefreshTitleButtons();
+
+            // 只有手柄模式下才清除视觉上的选中状态
+            if (usingGamepad)
+            {
+                ClearAllVisualSelections();
+            }
+        }
+
+        /// <summary>
+        /// 面板停用时的处理
+        /// </summary>
+        public void OnPanelDeactivated()
+        {
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 面板停用");
+            }
+
+            isActive = false;
+            usingGamepad = false;
+            currentSelectedIndex = -1;
+            isPanelVisible = false;
+            isFirstNavigation = true;
+            hasUserNavigated = false;
+
+            // 清除所有视觉选中状态
+            ClearAllVisualSelections();
+        }
+
+        /// <summary>
+        /// 处理自定义导航逻辑
+        /// </summary>
+        public void HandleCustomNavigation()
+        {
+            if (!isActive || !usingGamepad) return;
+
+            // 检查失焦情况
+            CheckLostFocus();
+
+            // 处理十字键导航
+            CheckDPadNavigationInput();
+        }
+
+        /// <summary>
+        /// 是否忽略确认键输入
+        /// </summary>
+        public bool ShouldIgnoreSubmit()
+        {
+            return false;
+        }
+        #endregion
+
+        #region 输入处理
+        /// <summary>
+        /// 更新输入状态
+        /// </summary>
+        private void UpdateInputState()
+        {
+            // 检查是否需要刷新按钮
+            if (buttonsNeedRefresh)
+            {
+                RefreshTitleButtons();
+            }
+        }
+
+        /// <summary>
+        /// 检查十字键导航输入
+        /// </summary>
+        private void CheckDPadNavigationInput()
+        {
+            if (!usingGamepad) return;
+
+            bool canNavigate = Time.unscaledTime - lastNavigationTime > navigationCooldown;
+            if (!canNavigate) return;
+
+            // 检查手柄输入
+            if (Gamepad.current != null)
+            {
+                Vector2 dpad = Gamepad.current.dpad.ReadValue();
+
+                // 处理十字键上
+                if (dpad.y > 0.5f)
+                {
+                    HandleVerticalNavigation(true);
+                    lastNavigationTime = Time.unscaledTime;
+                }
+                // 处理十字键下
+                else if (dpad.y < -0.5f)
+                {
+                    HandleVerticalNavigation(false);
+                    lastNavigationTime = Time.unscaledTime;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 处理垂直导航
+        /// </summary>
+        private void HandleVerticalNavigation(bool moveUp)
+        {
+            if (titleButtons.Count == 0) return;
+
+            int newIndex = currentSelectedIndex;
+
+            // 如果是第一次导航，选中第一个选项
+            if (isFirstNavigation)
+            {
+                isFirstNavigation = false;
+                hasUserNavigated = true;
+                newIndex = 0;
+
+                if (enableDebugLogs)
+                {
+                    Debug.Log($"[TitleSelectionNavigationPanel] 第一次导航，选中第一个选项");
+                }
+            }
+            else
+            {
+                // 如果当前没有选中或选中无效，从第一个开始
+                if (newIndex < 0 || newIndex >= titleButtons.Count || titleButtons[newIndex] == null)
+                {
+                    newIndex = 0;
+                }
+
+                // 计算新索引 - 在当前选择按钮内循环
+                if (moveUp)
+                {
+                    newIndex--;
+                    if (newIndex < 0)
+                    {
+                        newIndex = titleButtons.Count - 1;
+                    }
+                }
+                else
+                {
+                    newIndex++;
+                    if (newIndex >= titleButtons.Count)
+                    {
+                        newIndex = 0;
+                    }
+                }
+            }
+
+            SelectTitleButton(newIndex);
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 导航: {(moveUp ? "上" : "下")}, 从 {currentSelectedIndex} 到 {newIndex}");
+            }
+        }
+
+        /// <summary>
+        /// 检查失焦情况
+        /// </summary>
+        private void CheckLostFocus()
+        {
+            if (usingGamepad && currentSelectedIndex >= 0 && hasUserNavigated)
+            {
+                // 检查当前选中的按钮是否仍然有效
+                if (currentSelectedIndex < titleButtons.Count && titleButtons[currentSelectedIndex] != null)
+                {
+                    var currentButton = titleButtons[currentSelectedIndex];
+                    if (currentButton.gameObject.activeInHierarchy && currentButton.interactable)
+                    {
+                        // 检查EventSystem的当前选中对象
+                        var eventSystem = EventSystem.current;
+                        if (eventSystem != null && eventSystem.currentSelectedGameObject != currentButton.gameObject)
+                        {
+                            if (enableDebugLogs)
+                            {
+                                Debug.Log($"[TitleSelectionNavigationPanel] 检测到失焦，重新选中按钮: {currentSelectedIndex}");
+                            }
+
+                            // 重新选中当前按钮
+                            SelectTitleButton(currentSelectedIndex);
+                        }
+                    }
+                    else
+                    {
+                        // 按钮无效，回到第一个
+                        ForceRefreshAndSelectFirst();
+                    }
+                }
+                else
+                {
+                    // 索引无效，回到第一个
+                    ForceRefreshAndSelectFirst();
+                }
+            }
+            else if (usingGamepad && titleButtons.Count > 0 && hasUserNavigated)
+            {
+                // 没有当前选中，回到第一个
+                ForceRefreshAndSelectFirst();
+            }
+            else if (usingGamepad)
+            {
+                // 没有按钮但应该刷新
+                RefreshTitleButtons();
+            }
+        }
+        #endregion
+
+        #region 按钮管理
+        /// <summary>
+        /// 刷新标题按钮列表
+        /// </summary>
+        public void RefreshTitleButtons()
+        {
+            titleButtons.Clear();
+            firstButton = null;
+
+            if (gameObject.activeInHierarchy)
+            {
+                // 获取所有子对象中的按钮
+                Button[] buttons = GetComponentsInChildren<Button>(true);
+                foreach (var button in buttons)
+                {
+                    if (button != null && button.gameObject.activeInHierarchy && button.interactable)
+                    {
+                        titleButtons.Add(button);
+                        if (firstButton == null)
+                        {
+                            firstButton = button;
+                        }
+                    }
+                }
+            }
+
+            // 重置选中索引，但不自动选中
+            currentSelectedIndex = -1;
+            buttonsNeedRefresh = false;
+
+            // 只有手柄模式下且用户还没有开始导航才清除视觉选中状态
+            if (usingGamepad && !hasUserNavigated)
+            {
+                ClearAllVisualSelections();
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 刷新标题按钮，找到 {titleButtons.Count} 个按钮, 用户已导航: {hasUserNavigated}, 使用手柄: {usingGamepad}");
+                for (int i = 0; i < titleButtons.Count; i++)
+                {
+                    Debug.Log($"  - 按钮 {i}: {titleButtons[i]?.gameObject.name ?? "null"} (活跃: {titleButtons[i]?.gameObject.activeInHierarchy}, 可交互: {titleButtons[i]?.interactable})");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 选择指定索引的标题按钮
+        /// </summary>
+        public void SelectTitleButton(int index)
+        {
+            if (index < 0 || index >= titleButtons.Count || titleButtons[index] == null)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[TitleSelectionNavigationPanel] 尝试选择无效的按钮索引: {index}, 按钮总数: {titleButtons.Count}");
+                }
+                return;
+            }
+
+            var button = titleButtons[index];
+            if (button == null || !button.gameObject.activeInHierarchy || !button.interactable)
+            {
+                if (enableDebugLogs)
+                {
+                    Debug.LogWarning($"[TitleSelectionNavigationPanel] 按钮无效: {index}, 活跃: {button?.gameObject.activeInHierarchy}, 可交互: {button?.interactable}");
+                }
+                return;
+            }
+
+            // 设置选中对象
+            if (GamePadNavigationManager.Instance != null)
+            {
+                GamePadNavigationManager.Instance.SetSelectedObject(button.gameObject);
+            }
+            else
+            {
+                var eventSystem = EventSystem.current;
+                if (eventSystem != null)
+                {
+                    eventSystem.SetSelectedGameObject(button.gameObject);
+                }
+            }
+
+            currentSelectedIndex = index;
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 选中按钮: {index} - {button.gameObject.name}");
+            }
+        }
+
+        /// <summary>
+        /// 强制选择第一个按钮
+        /// </summary>
+        public void ForceSelectFirstButton()
+        {
+            if (titleButtons.Count > 0)
+            {
+                SelectTitleButton(0);
+                isFirstNavigation = false;
+                hasUserNavigated = true;
+            }
+            else
+            {
+                // 如果没有按钮，尝试刷新
+                RefreshTitleButtons();
+                if (titleButtons.Count > 0)
+                {
+                    SelectTitleButton(0);
+                    isFirstNavigation = false;
+                    hasUserNavigated = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 强制刷新并选择第一个按钮
+        /// </summary>
+        public void ForceRefreshAndSelectFirst()
+        {
+            RefreshTitleButtons();
+            if (titleButtons.Count > 0)
+            {
+                // 使用协程确保在布局完成后选择
+                StartCoroutine(DelayedSelectFirst());
+            }
+        }
+
+        /// <summary>
+        /// 清除所有按钮的视觉选中状态
+        /// </summary>
+        private void ClearAllVisualSelections()
+        {
+            var eventSystem = EventSystem.current;
+            if (eventSystem != null)
+            {
+                // 清除事件系统的选中状态
+                eventSystem.SetSelectedGameObject(null);
+            }
+
+            // 强制所有按钮退出选中状态
+            foreach (var button in titleButtons)
+            {
+                if (button != null)
+                {
+                    // 强制按钮退出选中状态
+                    var selectable = button as Selectable;
+                    if (selectable != null)
+                    {
+                        // 使用反射调用DoStateTransition来强制设置为Normal状态
+                        try
+                        {
+                            var method = typeof(Selectable).GetMethod("DoStateTransition",
+                                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                            if (method != null)
+                            {
+                                method.Invoke(selectable, new object[] { 0, true }); // 0 = Normal state
+                            }
+                        }
+                        catch (System.Exception e)
+                        {
+                            if (enableDebugLogs)
+                            {
+                                Debug.LogWarning($"[TitleSelectionNavigationPanel] 清除按钮状态失败: {e.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (enableDebugLogs)
+            {
+                Debug.Log($"[TitleSelectionNavigationPanel] 清除所有视觉选中状态");
+            }
+        }
+        #endregion
+
+        #region 协程管理
+        /// <summary>
+        /// 监控标题按钮变化的协程
+        /// </summary>
+        private IEnumerator MonitorTitleButtons()
+        {
+            int lastButtonCount = 0;
+            bool lastPanelVisible = false;
+
+            while (true)
+            {
+                yield return new WaitForSeconds(0.1f);
+
+                // 检查面板可见性变化
+                bool currentPanelVisible = gameObject.activeInHierarchy;
+                if (currentPanelVisible != lastPanelVisible)
+                {
+                    buttonsNeedRefresh = true;
+                    lastPanelVisible = currentPanelVisible;
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[TitleSelectionNavigationPanel] 面板可见性变化: {lastPanelVisible} -> {currentPanelVisible}");
+                    }
+                }
+
+                // 检查按钮数量变化
+                int currentButtonCount = GetCurrentButtonCount();
+
+                // 如果按钮数量发生变化或需要刷新，刷新按钮列表
+                if (currentButtonCount != lastButtonCount || buttonsNeedRefresh)
+                {
+                    RefreshTitleButtons();
+
+                    // 如果使用手柄且面板激活且用户已经开始导航，立即选中第一个按钮
+                    if (usingGamepad && isActive && titleButtons.Count > 0 && hasUserNavigated)
+                    {
+                        ForceSelectFirstButton();
+                    }
+
+                    lastButtonCount = currentButtonCount;
+
+                    if (enableDebugLogs)
+                    {
+                        Debug.Log($"[TitleSelectionNavigationPanel] 检测到按钮数量变化: {lastButtonCount} -> {currentButtonCount}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取当前按钮数量
+        /// </summary>
+        private int GetCurrentButtonCount()
+        {
+            if (!gameObject.activeInHierarchy)
+                return 0;
+
+            Button[] buttons = GetComponentsInChildren<Button>(true);
+            int count = 0;
+            foreach (var button in buttons)
+            {
+                if (button != null && button.gameObject.activeInHierarchy && button.interactable)
+                {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// 延迟选择第一个按钮
+        /// </summary>
+        private IEnumerator DelayedSelectFirst()
+        {
+            yield return null;
+            if (titleButtons.Count > 0 && titleButtons[0] != null)
+            {
+                SelectTitleButton(0);
+                isFirstNavigation = false;
+                hasUserNavigated = true;
+            }
+        }
+        #endregion
+
+        #region 公共API
+        /// <summary>
+        /// 获取当前选中的按钮索引
+        /// </summary>
+        public int GetCurrentSelectedIndex()
+        {
+            return currentSelectedIndex;
+        }
+
+        /// <summary>
+        /// 获取当前选中的按钮
+        /// </summary>
+        public Button GetCurrentSelectedButton()
+        {
+            if (currentSelectedIndex >= 0 && currentSelectedIndex < titleButtons.Count)
+            {
+                return titleButtons[currentSelectedIndex];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 手动刷新按钮列表
+        /// </summary>
+        [ContextMenu("手动刷新按钮列表")]
+        public void ManualRefreshButtons()
+        {
+            RefreshTitleButtons();
+        }
+
+        /// <summary>
+        /// 强制重新选中第一个按钮
+        /// </summary>
+        [ContextMenu("强制选中第一个按钮")]
+        public void ManualForceSelectFirst()
+        {
+            ForceRefreshAndSelectFirst();
+        }
+
+        /// <summary>
+        /// 标记需要刷新按钮
+        /// </summary>
+        public void MarkButtonsNeedRefresh()
+        {
+            buttonsNeedRefresh = true;
+        }
+
+        /// <summary>
+        /// 重置第一次导航标志
+        /// </summary>
+        public void ResetFirstNavigationFlag()
+        {
+            isFirstNavigation = true;
+            hasUserNavigated = false;
+        }
+
+        /// <summary>
+        /// 清除所有视觉选中状态
+        /// </summary>
+        [ContextMenu("清除视觉选中状态")]
+        public void ManualClearVisualSelections()
+        {
+            ClearAllVisualSelections();
+        }
+
+        /// <summary>
+        /// 获取当前输入模式
+        /// </summary>
+        public InputMode GetCurrentInputMode()
+        {
+            return currentInputMode;
+        }
+        #endregion
+
+        #region 调试方法
+        [ContextMenu("打印当前状态")]
+        public void PrintCurrentStatus()
+        {
+            Debug.Log($"[TitleSelectionNavigationPanel] 状态报告:");
+            Debug.Log($"- 按钮总数: {titleButtons.Count}");
+            Debug.Log($"- 当前选中索引: {currentSelectedIndex}");
+            Debug.Log($"- 活动状态: {isActive}");
+            Debug.Log($"- 使用手柄: {usingGamepad}");
+            Debug.Log($"- 输入模式: {currentInputMode}");
+            Debug.Log($"- 需要刷新: {buttonsNeedRefresh}");
+            Debug.Log($"- 面板可见: {isPanelVisible}");
+            Debug.Log($"- 第一次导航: {isFirstNavigation}");
+            Debug.Log($"- 用户已导航: {hasUserNavigated}");
+
+            for (int i = 0; i < titleButtons.Count; i++)
+            {
+                string status = (i == currentSelectedIndex) ? "[选中]" : "";
+                Debug.Log($"- 按钮 {i}: {titleButtons[i]?.gameObject.name ?? "null"} {status} (活跃: {titleButtons[i]?.gameObject.activeInHierarchy}, 可交互: {titleButtons[i]?.interactable})");
+            }
+        }
+        #endregion
+    }
+}
+

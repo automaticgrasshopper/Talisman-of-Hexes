@@ -1,0 +1,194 @@
+"Input"
+{
+    "version"        "2"
+    "controller_type" "steam_controller"
+
+    // ==================== 操作集定义 ====================
+    "actions"
+    {
+        "Game"
+        {
+            "advance" { "title" "#action_advance" "type" "button" }
+            "auto_mode" { "title" "#action_auto_mode" "type" "button" }
+            "save" { "title" "#action_save" "type" "button" }
+            "load" { "title" "#action_load" "type" "button" }
+            "quick_save" { "title" "#action_quick_save" "type" "button" }
+            "quick_load" { "title" "#action_quick_load" "type" "button" }
+            "toggle_dialogue" { "title" "#action_toggle_dialogue" "type" "button" }
+            "show_log" { "title" "#action_show_log" "type" "button" }
+            "show_config" { "title" "#action_show_config" "type" "button" }
+            "return_title" { "title" "#action_return_title" "type" "button" }
+            "fast_forward" { "title" "#action_fast_forward" "type" "button" }
+            "quit_game" { "title" "#action_quit_game" "type" "button" }
+            "leave_view" { "title" "#action_leave_view" "type" "button" }
+            "toggle_fullscreen" { "title" "#action_toggle_fullscreen" "type" "button" }
+            "switch_language" { "title" "#action_switch_language" "type" "button" }
+            "move" { "title" "#action_move" "type" "joystick" }
+            "confirm" { "title" "#action_confirm" "type" "button" }
+            "back" { "title" "#action_back" "type" "button" }
+            "grab_left" { "title" "#action_grab_left" "type" "button" }
+            "grab_right" { "title" "#action_grab_right" "type" "button" }
+        }
+    }
+
+    // ==================== 四语本地化文本 ====================
+    "localization"
+    {
+        "english"
+        {
+            "#action_advance"        "Advance Text / Next"
+            "#action_auto_mode"      "Toggle Auto-play"
+            "#action_save"           "Save"
+            "#action_load"           "Load"
+            "#action_quick_save"     "Quick Save"
+            "#action_quick_load"     "Quick Load"
+            "#action_toggle_dialogue" "Show/Hide Dialogue Box"
+            "#action_show_log"       "Show History Log"
+            "#action_show_config"    "Open Settings Menu"
+            "#action_return_title"   "Return to Title Screen"
+            "#action_fast_forward"   "Fast Forward"
+            "#action_quit_game"      "Quit Game (Hold)"
+            "#action_leave_view"     "Exit Current View"
+            "#action_toggle_fullscreen" "Toggle Fullscreen"
+            "#action_switch_language" "Switch Language"
+            "#action_move"           "Move / Select"
+            "#action_confirm"        "Confirm"
+            "#action_back"           "Back / Cancel"
+            "#action_grab_left"      "Grab Left"
+            "#action_grab_right"     "Grab Right"
+        }
+        "schinese"
+        {
+            "#action_advance"        "推进对话 / 下一句"
+            "#action_auto_mode"      "切换自动播放"
+            "#action_save"           "存档"
+            "#action_load"           "读档"
+            "#action_quick_save"     "快速存档"
+            "#action_quick_load"     "快速读档"
+            "#action_toggle_dialogue" "显示 / 隐藏对话框"
+            "#action_show_log"       "查看历史记录"
+            "#action_show_config"    "打开设置菜单"
+            "#action_return_title"   "返回标题界面"
+            "#action_fast_forward"   "快进"
+            "#action_quit_game"      "退出游戏 (长按)"
+            "#action_leave_view"     "退出当前视图"
+            "#action_toggle_fullscreen" "切换全屏"
+            "#action_switch_language" "切换语言"
+            "#action_move"           "移动 / 选择"
+            "#action_confirm"        "确认"
+            "#action_back"           "返回 / 取消"
+            "#action_grab_left"      "左抓握"
+            "#action_grab_right"     "右抓握"
+        }
+        "tchinese"
+        {
+            "#action_advance"        "推進對話 / 下一句"
+            "#action_auto_mode"      "切換自動播放"
+            "#action_save"           "儲存"
+            "#action_load"           "讀取"
+            "#action_quick_save"     "快速儲存"
+            "#action_quick_load"     "快速讀取"
+            "#action_toggle_dialogue" "顯示 / 隱藏對話框"
+            "#action_show_log"       "檢視歷史記錄"
+            "#action_show_config"    "開啟設定選單"
+            "#action_return_title"   "返回標題畫面"
+            "#action_fast_forward"   "快轉"
+            "#action_quit_game"      "結束遊戲 (長按)"
+            "#action_leave_view"     "離開目前檢視"
+            "#action_toggle_fullscreen" "切換全螢幕"
+            "#action_switch_language" "切換語言"
+            "#action_move"           "移動 / 選擇"
+            "#action_confirm"        "確認"
+            "#action_back"           "返回 / 取消"
+            "#action_grab_left"      "左抓握"
+            "#action_grab_right"     "右抓握"
+        }
+        "japanese"
+        {
+            "#action_advance"        "テキスト送り / 次へ"
+            "#action_auto_mode"      "オートモード切替"
+            "#action_save"           "セーブ"
+            "#action_load"           "ロード"
+            "#action_quick_save"     "クイックセーブ"
+            "#action_quick_load"     "クイックロード"
+            "#action_toggle_dialogue" "ダイアログ表示 / 非表示"
+            "#action_show_log"       "ログを表示"
+            "#action_show_config"    "設定メニューを開く"
+            "#action_return_title"   "タイトルに戻る"
+            "#action_fast_forward"   "早送り"
+            "#action_quit_game"      "ゲームを終了 (長押し)"
+            "#action_leave_view"     "現在のビューを抜ける"
+            "#action_toggle_fullscreen" "フルスクリーン切替"
+            "#action_switch_language" "言語切替"
+            "#action_move"           "移動 / 選択"
+            "#action_confirm"        "決定"
+            "#action_back"           "戻る / キャンセル"
+            "#action_grab_left"      "左掴み"
+            "#action_grab_right"     "右掴み"
+        }
+    }
+
+    // ==================== Steam Deck默认配置 (内嵌式) ====================
+    "configurations"
+    {
+        "controller_neptune"
+        {
+            "actions"
+            {
+                "Game"
+                {
+                    // 主要游戏操作
+                    "advance" { "activators" { "button_trigger" { "buttons" "button_a" } } }
+                    // 根据你的指示，auto_mode 不在手柄上实现，因此移除其按键绑定
+                    "save" { "activators" { "button_trigger" { "buttons" "left_shoulder" } } }
+                    "load" { "activators" { "button_trigger" { "buttons" "right_shoulder" } } }
+                    "quick_save" { "activators" { "button_trigger" { "buttons" "button_l4" } } }
+                    "quick_load" { "activators" { "button_trigger" { "buttons" "button_r4" } } }
+                    // 根据你的指示，toggle_dialogue 不在手柄上实现（或由其他方式控制），因此移除其按键绑定
+                    "show_log" { "activators" { "button_trigger" { "buttons" "button_north" } } } // Y键：查看历史记录
+                    "show_config" { "activators" { "button_trigger" { "buttons" "button_start" } } }
+                    "return_title" { "activators" { "button_trigger" { "buttons" "back_button" } } }
+                    "fast_forward" { "activators" { "button_trigger" { "buttons" "button_west" } } } // X键：快进（小游戏中为跳过/自动）
+                    "quit_game" { "activators" { "button_trigger" { "buttons" "button_east;back_button" } } }
+                    "leave_view" { "activators" { "button_trigger" { "buttons" "button_east" } } }
+                    "toggle_fullscreen" { "activators" { "button_trigger" { "buttons" "button_r5" } } }
+                    "switch_language" { "activators" { "button_trigger" { "buttons" "button_l5" } } }
+                    
+                    // 方向与核心控制
+                    "move"
+                    {
+                        "inputs"
+                        {
+                            "joystick_move" { "activators" { "joystick" { "inputs" "joystick_left" "mode" "absolute" } } }
+                            "dpad_move" { "activators" { "dpad" { } } }
+                        }
+                        "mode" "joystick_move"
+                        "type" "joystick"
+                    }
+                    "confirm" { "activators" { "button_trigger" { "buttons" "button_a" } } }
+                    "back" { "activators" { "button_trigger" { "buttons" "button_b" } } }
+                    "grab_left" { "activators" { "button_trigger" { "buttons" "left_trigger" } } }
+                    "grab_right" { "activators" { "button_trigger" { "buttons" "right_trigger" } } }
+                    
+                    // 鼠标模拟（用于兼容性）
+                    "mouse_left_click"
+                    {
+                        "title" "Left Click"
+                        "inputs"
+                        {
+                            "click"
+                            {
+                                "activators"
+                                {
+                                    "button_trigger" { "buttons" "left_touchpad;button_a" }
+                                }
+                            }
+                        }
+                        "mode" "pointing"
+                        "type" "button"
+                    }
+                }
+            }
+        }
+    }
+}

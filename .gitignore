@@ -1,0 +1,29 @@
+# ──────────────────────────────────────────────────────────────
+# Talisman of Hexes — 只跟踪 Assets/，其他全部忽略
+# ──────────────────────────────────────────────────────────────
+
+# 顶层默认全部忽略
+/*
+
+# 白名单：保留 Assets/ 和这份 gitignore
+!/.gitignore
+!/Assets/
+
+# ──────────────────────────────────────────────────────────────
+# Assets/ 内部排除：影视类大文件 + 未裁剪原始资源
+# ──────────────────────────────────────────────────────────────
+
+# 视频源文件（运行时按需打包，源 mp4 不入版本控制）
+/Assets/Resources/Videos/
+/Assets/Resources/Videos.meta
+
+# CG / 立绘未裁剪原始素材（生产用，运行时用裁好的）
+/Assets/CGUncropped/
+/Assets/CGUncropped.meta
+/Assets/StandingsUncropped/
+/Assets/StandingsUncropped.meta
+
+# Unity 运行时产物
+**/*.tmp
+**/Thumbs.db
+**/.DS_Store

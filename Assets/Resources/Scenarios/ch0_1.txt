@@ -1,0 +1,50 @@
+@<| label('ch0_1', '进入大厦') is_unlocked_start() |>
+<|
+set_box('hide')
+anim:trans(cam, function()
+    show(bg, 'BG_elevator')
+end, 'fade', 1.5, { _Mask = 'Masks/fade_up' })
+|>
+<|
+set_box()
+box_alignment('center')
+|>
+深夜十一点，迎宾大厦的灯还亮着。
+
+据说三年前，有一批访客在这里失踪了，连警察都没有立案。
+
+<|
+stop_auto_ff()
+input_off()
+set_box('hide')
+video('Videos/titleSurgery')
+video_subtitle_apply('ch0_1', 'v1')
+video_play()
+wait_fence()
+video_hide()
+input_on()
+set_box()
+box_alignment('center')
+|>
+
+我站在旋转门前，感到一阵说不清楚的寒意。
+
+这里不对劲。
+
+<|
+stop_auto_ff()
+input_off()
+set_box('hide')
+video('Videos/demo_video')
+video_subtitle_apply('ch0_1', 'v2')
+video_play()
+wait_fence()
+video_hide()
+input_on()
+set_box()
+box_alignment('center')
+|>
+
+走进去还是离开？
+
+@<| jump_to 'ch0_2' |>

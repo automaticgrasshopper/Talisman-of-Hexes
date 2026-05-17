@@ -1,0 +1,62 @@
+function sound(audio_name, volume, pos, is_3d)
+    volume = volume or 1
+    pos = pos or {0, 0, 0}
+    is_3d = is_3d or false
+    __Nova.soundController:PlayClip(audio_name, volume, Vector3(unpack(pos)), is_3d)
+end
+
+function say(obj, audio_name, delay, override_auto_voice)
+    delay = delay or 0
+    if override_auto_voice == nil then
+        override_auto_voice = true
+    end
+    obj:Say(audio_name, delay)
+    if override_auto_voice then
+        auto_voice_skip()
+    end
+end
+
+function play(obj, audio_name, volume)
+    volume = volume or 0.5
+    obj.scriptVolume = volume
+    obj:Play(audio_name)
+
+    if obj:GetType() == typeof(Nova.AudioController) then
+        __Nova.musicUnlockHelper:Unlock(obj.audioFolder .. '/' .. audio_name)
+    end
+end
+add_preload_pattern('play')
+
+function stop(obj)
+    obj:Stop()
+    schedule_gc()
+end
+
+function volume(obj, value)
+    obj.scriptVolume = value
+end
+
+make_anim_method('volume', function(self, obj, value, duration, easing)
+    duration = duration or 1
+    easing = parse_easing(easing or 1)
+    return self:_then(Nova.VolumeAnimationProperty(obj, value)):_with(easing):_for(duration)
+end)
+
+make_anim_method('fade_in', function(self, obj, audio_name, volume, duration, easing)
+    volume = volume or 0.5
+    local entry = self:action(play, obj, audio_name, 0):volume(obj, volume, duration, easing)
+    entry.head = self
+    return entry
+end)
+
+make_anim_method('fade_out', function(self, obj, duration, easing)
+    local entry = self:volume(obj, 0, duration, easing):action(stop, obj)
+    entry.head = self
+    return entry
+end)
+
+make_anim_method('pitch', function(self, obj, value, duration, easing)
+    duration = duration or 1
+    easing = parse_easing(easing or 1)
+    return self:_then(Nova.PitchAnimationProperty(obj, value)):_with(easing):_for(duration)
+end)

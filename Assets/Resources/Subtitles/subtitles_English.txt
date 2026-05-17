@@ -1,0 +1,9 @@
+_subtitle_data['English'] = {
+    ['ch0_1.v1'] = {
+        {from='00:00:02.000', to='00:00:05.000', text='Your mother passed away believing you were strong enough for this.'},
+        {from='00:00:08.000', to='00:00:10.000', text='Yes. I did.'},
+    },
+    ['ch0_1.v2'] = {
+        {from='00:00:01.000', to='00:00:03.000', text='Demo video subtitle one.'},
+    },
+}

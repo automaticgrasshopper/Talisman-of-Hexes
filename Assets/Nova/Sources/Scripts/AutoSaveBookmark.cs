@@ -1,0 +1,68 @@
+using UnityEngine;
+
+namespace Nova
+{
+    public class AutoSaveBookmark : MonoBehaviour
+    {
+        public static AutoSaveBookmark Current;
+
+        private GameState gameState;
+        private SaveViewController saveViewController;
+
+        private string lastSavedNodeName;
+        private int lastSavedDialogueIndex;
+
+        private void Awake()
+        {
+            Current = this;
+            gameState = Utils.FindNovaController().GameState;
+            saveViewController = Utils.FindViewManager().GetController<SaveViewController>();
+
+            gameState.dialogueChanged.AddListener(OnDialogueChanged);
+            saveViewController.bookmarkSaved.AddListener(UpdateSaved);
+            saveViewController.bookmarkLoaded.AddListener(UpdateSaved);
+        }
+
+        private void OnDestroy()
+        {
+            gameState.dialogueChanged.RemoveListener(OnDialogueChanged);
+            saveViewController.bookmarkSaved.RemoveListener(UpdateSaved);
+            saveViewController.bookmarkLoaded.RemoveListener(UpdateSaved);
+        }
+
+        private void OnDialogueChanged(DialogueChangedData _)
+        {
+            TrySave();
+        }
+
+        private void UpdateSaved()
+        {
+            lastSavedNodeName = gameState.currentNode.name;
+            lastSavedDialogueIndex = gameState.currentIndex;
+        }
+
+        private bool isSame => gameState.currentNode == null ||
+                               (gameState.currentNode.name == lastSavedNodeName &&
+                                gameState.currentIndex == lastSavedDialogueIndex);
+
+        public void TrySave(Texture2D screenshot)
+        {
+            if (isSame)
+            {
+                return;
+            }
+
+            saveViewController.AutoSaveBookmark(screenshot);
+        }
+
+        public void TrySave()
+        {
+            if (isSame)
+            {
+                return;
+            }
+
+            saveViewController.AutoSaveBookmark();
+        }
+    }
+}
