@@ -9,6 +9,4 @@ box_alignment('center')
 
 我深吸一口气，推开门。
 
-序章的第一夜，从这里真正开始。
-
-@<| is_end() |>
+@<| jump_to 'ch0_8_A' |>

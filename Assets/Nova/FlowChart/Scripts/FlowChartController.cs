@@ -200,7 +200,7 @@ namespace Nova
             int maxReachedColumn = int.MaxValue;
 
             // 计算当前章节的金色路径（slot 集合 + 边集合）
-            ComputeGoldenPath(currentChapter);
+            ComputeGoldenPath(currentChapter, currentSlot);
 
             foreach (var slot in currentChapter.slots)
             {
@@ -253,13 +253,95 @@ namespace Nova
         //     最终层级（自下而上）：白线 → 金线 → slot，金线永远盖住白线、不会遮 slot。
         private void BuildLines(FlowChartChapter chapter, Dictionary<FlowChartSlot, Vector2> positions, int maxReachedColumn)
         {
+            // 锚点：以 slot 中心为基准，对同源/同目标多条边做小步长偏移分散视觉。
+            // 出边偏移按目标 Y 排序、入边偏移按源 Y 排序 —— 避免线交叉。
+            // 由于布局已让 source.Y 落在 target.Y 的中位数上，"指向中位数目标"那条线
+            // 偏移恰好为 0，与目标中心连成纯水平直线。
+            const float anchorStep = 10f;
+
+            var edgeOutY = new Dictionary<(string, string), float>();
+            var edgeInY = new Dictionary<(string, string), float>();
+
+            // 出口偏移：每个源把出边按目标 Y 降序排，给等距偏移
+            foreach (var s in chapter.slots)
+            {
+                if (s == null || s.nextSlotIds == null) continue;
+                var nexts = new List<string>();
+                foreach (var nid in s.nextSlotIds)
+                    if (chapter.GetSlot(nid) != null) nexts.Add(nid);
+                if (nexts.Count == 0) continue;
+
+                nexts.Sort((a, b) => positions[chapter.GetSlot(b)].y.CompareTo(positions[chapter.GetSlot(a)].y));
+
+                int n = nexts.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    float offset = ((n - 1) * 0.5f - i) * anchorStep;
+                    edgeOutY[(s.slotId, nexts[i])] = positions[s].y + offset;
+                }
+            }
+
+            // 入口偏移：每个目标把入边按源 Y 降序排，给等距偏移
+            var sourcesByTarget = new Dictionary<FlowChartSlot, List<FlowChartSlot>>();
+            foreach (var s in chapter.slots)
+            {
+                if (s == null || s.nextSlotIds == null) continue;
+                foreach (var nid in s.nextSlotIds)
+                {
+                    var t = chapter.GetSlot(nid);
+                    if (t == null) continue;
+                    if (!sourcesByTarget.TryGetValue(t, out var list))
+                    {
+                        list = new List<FlowChartSlot>();
+                        sourcesByTarget[t] = list;
+                    }
+                    list.Add(s);
+                }
+            }
+            foreach (var kv in sourcesByTarget)
+            {
+                var t = kv.Key;
+                var srcs = kv.Value;
+                if (srcs.Count == 0) continue;
+
+                srcs.Sort((a, b) => positions[b].y.CompareTo(positions[a].y));
+
+                int n = srcs.Count;
+                for (int i = 0; i < n; i++)
+                {
+                    float offset = ((n - 1) * 0.5f - i) * anchorStep;
+                    edgeInY[(srcs[i].slotId, t.slotId)] = positions[t].y + offset;
+                }
+            }
+
+            // 同 Y 边强制走中心：source.y == target.y 的边两端都用中心 Y，保证完美水平。
+            // 其他多边的偏移不变，仍然分散。
+            foreach (var s in chapter.slots)
+            {
+                if (s == null || s.nextSlotIds == null) continue;
+                foreach (var nid in s.nextSlotIds)
+                {
+                    var t = chapter.GetSlot(nid);
+                    if (t == null) continue;
+                    if (Mathf.Abs(positions[s].y - positions[t].y) < 0.5f)
+                    {
+                        edgeOutY[(s.slotId, nid)] = positions[s].y;
+                        edgeInY[(s.slotId, nid)] = positions[t].y;
+                    }
+                }
+            }
+
             // Pass 1: 仅金线（CurrentBranch）
-            EmitLines(chapter, positions, maxReachedColumn, goldOnly: true);
+            EmitLines(chapter, positions, maxReachedColumn, edgeOutY, edgeInY, goldOnly: true);
             // Pass 2: 仅白线（Visited）。后建被压到 sibling 0，反而把金线挤到上层。
-            EmitLines(chapter, positions, maxReachedColumn, goldOnly: false);
+            EmitLines(chapter, positions, maxReachedColumn, edgeOutY, edgeInY, goldOnly: false);
         }
 
-        private void EmitLines(FlowChartChapter chapter, Dictionary<FlowChartSlot, Vector2> positions, int maxReachedColumn, bool goldOnly)
+        private void EmitLines(FlowChartChapter chapter, Dictionary<FlowChartSlot, Vector2> positions,
+            int maxReachedColumn,
+            Dictionary<(string, string), float> edgeOutY,
+            Dictionary<(string, string), float> edgeInY,
+            bool goldOnly)
         {
             foreach (var slot in chapter.slots)
             {
@@ -282,6 +364,13 @@ namespace Nova
                         ? FlowChartConnectionLine.LineState.CurrentBranch
                         : FlowChartConnectionLine.LineState.Visited;
 
+                    var key = (slot.slotId, nextId);
+                    float outY = edgeOutY.TryGetValue(key, out var oy) ? oy : positions[slot].y;
+                    float inY  = edgeInY.TryGetValue(key, out var iy)  ? iy : positions[nextSlot].y;
+
+                    Vector2 startPos = new Vector2(positions[slot].x, outY);
+                    Vector2 endPos   = new Vector2(positions[nextSlot].x, inY);
+
                     var lineGo = new GameObject($"Line_{slot.slotId}->{nextId}");
                     lineGo.transform.SetParent(content, false);
                     lineGo.transform.SetAsFirstSibling();
@@ -290,8 +379,8 @@ namespace Nova
                     line.lineWidth = database.lineWidth;
                     line.cornerRadius = database.lineCornerRadius;
                     line.SetLine(
-                        positions[slot],
-                        positions[nextSlot],
+                        startPos,
+                        endPos,
                         lineState,
                         database.lineCurrentBranchMaterial,
                         database.lineActiveMaterial,
@@ -355,18 +444,78 @@ namespace Nova
             float rowSpacing = database.rowSpacing;
             float halfMaxColumn = maxColumn * 0.5f;
 
-            foreach (var kv in groups)
+            // 从右向左反向布局：
+            //   最右列 = 均匀分布（基准）
+            //   其余列 = 每个 slot 落到 "出边目标 Y 的中位数"
+            //           若整列的理想顺序与 chapter.slots 顺序冲突，整列退化为均匀分布
+            for (int col = maxColumn; col >= 0; col--)
             {
-                int col = kv.Key;
-                var list = kv.Value;
+                if (!groups.TryGetValue(col, out var list)) continue;
                 int count = list.Count;
+                float x = (col - halfMaxColumn) * colSpacing;
                 float halfCount = (count - 1) * 0.5f;
 
+                if (col == maxColumn)
+                {
+                    // 最右列：均匀分布
+                    for (int i = 0; i < count; i++)
+                        result[list[i]] = new Vector2(x, (halfCount - i) * rowSpacing);
+                    continue;
+                }
+
+                // 算每个 slot 的"理想 Y"
+                var idealY = new float[count];
                 for (int i = 0; i < count; i++)
                 {
-                    float x = (col - halfMaxColumn) * colSpacing;
-                    float y = (halfCount - i) * rowSpacing;
-                    result[list[i]] = new Vector2(x, y);
+                    var s = list[i];
+                    var ys = new List<float>();
+                    if (s.nextSlotIds != null)
+                    {
+                        foreach (var nid in s.nextSlotIds)
+                        {
+                            var t = chapter.GetSlot(nid);
+                            if (t != null && result.TryGetValue(t, out var pos)) ys.Add(pos.y);
+                        }
+                    }
+                    if (ys.Count > 0)
+                    {
+                        ys.Sort();
+                        int mid = ys.Count / 2;
+                        idealY[i] = (ys.Count % 2 == 1) ? ys[mid] : (ys[mid - 1] + ys[mid]) * 0.5f;
+                    }
+                    else
+                    {
+                        // 无出边（死亡节点）→ 用均匀分布的 Y 作 fallback
+                        idealY[i] = (halfCount - i) * rowSpacing;
+                    }
+                }
+
+                // 一致性检查：chapter.slots 顺序里靠前的 slot 理想 Y 应不小于靠后的
+                bool consistent = true;
+                float lastY = float.PositiveInfinity;
+                for (int i = 0; i < count; i++)
+                {
+                    if (idealY[i] > lastY) { consistent = false; break; }
+                    lastY = idealY[i];
+                }
+
+                if (consistent)
+                {
+                    // 用理想 Y，但相邻最小间距 = rowSpacing（避免重叠）
+                    // 不做整列居中——必须保持与右侧 target Y 对齐，否则横线对不上。
+                    float prevY = float.PositiveInfinity;
+                    for (int i = 0; i < count; i++)
+                    {
+                        float y = (i == 0) ? idealY[i] : Mathf.Min(idealY[i], prevY - rowSpacing);
+                        result[list[i]] = new Vector2(x, y);
+                        prevY = y;
+                    }
+                }
+                else
+                {
+                    // 冲突 → 均匀分布
+                    for (int i = 0; i < count; i++)
+                        result[list[i]] = new Vector2(x, (halfCount - i) * rowSpacing);
                 }
             }
 
@@ -455,50 +604,95 @@ namespace Nova
         }
 
         // 计算当前章节的金色路径 slot/edge 集合
-        private void ComputeGoldenPath(FlowChartChapter chapter)
+        // 反向回溯：从 currentSlot 沿父节点向起点走，每步选时间戳最大的已访问父节点。
+        // 这样金线必然经过当前位置，不会被死亡支线的较新时间戳吸走。
+        private void ComputeGoldenPath(FlowChartChapter chapter, FlowChartSlot currentSlot)
         {
             _goldSlots.Clear();
             _goldEdges.Clear();
             if (chapter == null || string.IsNullOrEmpty(chapter.firstSlotId)) return;
+            if (currentSlot == null) return;
 
             var data = checkpointManager.Get<FlowChartGoldenData>(FlowChartGoldenData.SaveKey, null);
             if (data == null || data.visitTimes.Count == 0) return;
 
-            var start = chapter.GetSlot(chapter.firstSlotId);
-            if (start == null) return;
+            // currentSlot 必须已经走过才高亮（避免从一个未访问 slot 起步）
+            if (GetSlotStateRaw(currentSlot) == SlotState.Unknown) return;
 
-            // 起点必须已经走过才高亮
-            if (GetSlotStateRaw(start) == SlotState.Unknown) return;
+            // 构建反向邻接表：child -> [parents...]
+            var parents = new Dictionary<FlowChartSlot, List<FlowChartSlot>>();
+            foreach (var s in chapter.slots)
+            {
+                if (s == null || s.nextSlotIds == null) continue;
+                foreach (var nextId in s.nextSlotIds)
+                {
+                    var nextSlot = chapter.GetSlot(nextId);
+                    if (nextSlot == null) continue;
+                    if (!parents.TryGetValue(nextSlot, out var list))
+                    {
+                        list = new List<FlowChartSlot>();
+                        parents[nextSlot] = list;
+                    }
+                    list.Add(s);
+                }
+            }
 
             var visited = new HashSet<FlowChartSlot>();
-            var current = start;
+            var current = currentSlot;
             _goldSlots.Add(current);
 
             while (current != null && !visited.Contains(current))
             {
                 visited.Add(current);
 
+                if (!parents.TryGetValue(current, out var parentList) || parentList.Count == 0)
+                    break;
+
+                FlowChartSlot pickedParent = null;
+                long bestTs = long.MinValue;
+                foreach (var p in parentList)
+                {
+                    if (!data.visitTimes.TryGetValue(SlotKey(chapter, p), out var ts)) continue;
+                    if (ts > bestTs)
+                    {
+                        bestTs = ts;
+                        pickedParent = p;
+                    }
+                }
+
+                if (pickedParent == null) break;
+                _goldEdges.Add((pickedParent.slotId, current.slotId));
+                _goldSlots.Add(pickedParent);
+                current = pickedParent;
+            }
+
+            // 正向延伸：从 currentSlot 顺着已访问的子节点继续走到最远端，
+            // 每步在已访问且非死亡的子节点里挑时间戳最大的，直到没得走。
+            var forwardVisited = new HashSet<FlowChartSlot>(visited);
+            var forward = currentSlot;
+            while (forward != null && forward.nextSlotIds != null)
+            {
                 FlowChartSlot pickedNext = null;
                 long bestTs = long.MinValue;
-                if (current.nextSlotIds != null)
+                foreach (var nextId in forward.nextSlotIds)
                 {
-                    foreach (var nextId in current.nextSlotIds)
+                    var nextSlot = chapter.GetSlot(nextId);
+                    if (nextSlot == null) continue;
+                    if (nextSlot.isDeath) continue;
+                    if (forwardVisited.Contains(nextSlot)) continue;
+                    if (!data.visitTimes.TryGetValue(SlotKey(chapter, nextSlot), out var ts)) continue;
+                    if (ts > bestTs)
                     {
-                        var nextSlot = chapter.GetSlot(nextId);
-                        if (nextSlot == null) continue;
-                        if (!data.visitTimes.TryGetValue(SlotKey(chapter, nextSlot), out var ts)) continue;
-                        if (ts > bestTs)
-                        {
-                            bestTs = ts;
-                            pickedNext = nextSlot;
-                        }
+                        bestTs = ts;
+                        pickedNext = nextSlot;
                     }
                 }
 
                 if (pickedNext == null) break;
-                _goldEdges.Add((current.slotId, pickedNext.slotId));
+                _goldEdges.Add((forward.slotId, pickedNext.slotId));
                 _goldSlots.Add(pickedNext);
-                current = pickedNext;
+                forwardVisited.Add(pickedNext);
+                forward = pickedNext;
             }
         }
 

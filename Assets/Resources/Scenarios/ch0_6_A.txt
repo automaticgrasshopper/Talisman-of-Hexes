@@ -3,10 +3,19 @@
 set_box()
 box_alignment('center')
 |>
-一楼最里面那间店铺的卷帘门虚掩着。门缝下渗出一条暖黄色的光，像有人故意留给我看。
+楼梯井深得不像话，墙皮剥落处隐约能看到上一任住户用粉笔留下的箭头。
 
-我蹲下来，掀开卷帘——
+走到二楼半，应急灯突然全灭了三秒——再亮起时，楼梯口多出了一道影子。
 
-序章的第一夜，从这里真正开始。
+那东西要从我面前掠过去，我必须看准时机出手——只有一次机会。
 
-@<| is_end() |>
+[stage=before_checkpoint]<|
+minigame(__Nova.uiPrefabLoader, 'MinigameTest')
+|>
+胜负已分。
+
+@<| branch {
+    {dest='ch0_7_A', mode='jump', cond="v_minigame_result == 'success'"},
+    {dest='ch0_7_B', mode='jump', cond="v_minigame_result == 'wrong'"},
+    {dest='ch0_7_C', mode='jump', cond="v_minigame_result == 'timeout'"},
+} |>

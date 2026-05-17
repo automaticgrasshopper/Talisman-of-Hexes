@@ -47,6 +47,24 @@ namespace Nova
         private float clickCooldown;
         private Tween slideTween;
 
+        // 视频播放 / 小游戏期间禁用侧边菜单（不弹出、按钮不响应），避免玩家在中断流程中切走视图
+        private VideoController videoController;
+        private PrefabLoader prefabLoader;
+
+        /// <summary>
+        /// 是否处于阻塞态：视频在播 或 prefabLoader 上挂着小游戏 prefab。
+        /// </summary>
+        private bool IsBlocked()
+        {
+            if (videoController == null) videoController = FindObjectOfType<VideoController>();
+            if (videoController != null && videoController.IsVideoActive) return true;
+
+            if (prefabLoader == null) prefabLoader = FindObjectOfType<PrefabLoader>();
+            if (prefabLoader != null && !string.IsNullOrEmpty(prefabLoader.currentPrefabName)) return true;
+
+            return false;
+        }
+
         private void Awake()
         {
             viewManager = Utils.FindViewManager();
@@ -81,6 +99,17 @@ namespace Nova
             if (clickCooldown > 0f)
             {
                 clickCooldown -= Time.unscaledDeltaTime;
+                return;
+            }
+
+            // 视频 / 小游戏中：强制收起，并忽略 hover 触发的开启
+            if (IsBlocked())
+            {
+                if (isOpen)
+                {
+                    wasHover = false;
+                    Close();
+                }
                 return;
             }
 
@@ -147,6 +176,7 @@ namespace Nova
 
         private void OnFlowchartClick()
         {
+            if (IsBlocked()) return;
             PlaySound(buttonClickSound);
             var ctrl = viewManager != null ? viewManager.GetController<FlowChartController>() : null;
             if (ctrl != null) ctrl.Show(true, null);
@@ -155,6 +185,7 @@ namespace Nova
 
         private void OnLogClick()
         {
+            if (IsBlocked()) return;
             PlaySound(buttonClickSound);
             var ctrl = viewManager != null ? viewManager.GetController<LogController>() : null;
             if (ctrl != null) ctrl.Show();
@@ -163,6 +194,7 @@ namespace Nova
 
         private void OnGalleryClick()
         {
+            if (IsBlocked()) return;
             // Placeholder — see-and-hear gallery (见闻) not yet implemented.
             PlaySound(buttonClickSound);
             BeginCloseAfterAction();
@@ -170,6 +202,7 @@ namespace Nova
 
         private void OnConfigClick()
         {
+            if (IsBlocked()) return;
             PlaySound(buttonClickSound);
             var ctrl = viewManager != null ? viewManager.GetController<ConfigViewController>() : null;
             if (ctrl != null) ctrl.Show();

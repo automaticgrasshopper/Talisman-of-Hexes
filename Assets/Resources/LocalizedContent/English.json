@@ -4,5 +4,8 @@
   "flowchart.slot.1_1": "Enter the Building",
   "flowchart.slot.1_2_A": "Danger Closes In",
   "flowchart.slot.1_2_B": "Leaving the Center",
-  "flowchart.slot.1_3": "No Way Out"
+  "flowchart.slot.1_3": "No Way Out",
+  "flowchart.slot.1_6_A": "Brief Safety",
+  "flowchart.slot.1_6_B": "Accidental Death",
+  "flowchart.slot.1_6_C": "Stillness Saves"
 }

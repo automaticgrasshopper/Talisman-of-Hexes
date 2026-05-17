@@ -91,7 +91,10 @@ MonoBehaviour:
     nodeNames:
     - ch0_6_A
     column: 4
-    nextSlotIds: []
+    nextSlotIds:
+    - 1_6_B
+    - 1_6_C
+    - 1_6_A
     isDeath: 0
   - slotId: 1_5_B
     slotNameKey: flowchart.slot.1_5_B
@@ -99,5 +102,31 @@ MonoBehaviour:
     nodeNames:
     - ch0_6_B
     column: 4
+    nextSlotIds:
+    - 1_6_A
+    isDeath: 0
+  - slotId: 1_6_B
+    slotNameKey: flowchart.slot.1_6_B
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_7_B
+    column: 5
+    nextSlotIds: []
+    isDeath: 1
+  - slotId: 1_6_C
+    slotNameKey: flowchart.slot.1_6_C
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_7_C
+    column: 5
+    nextSlotIds: []
+    isDeath: 0
+  - slotId: 1_6_A
+    slotNameKey: flowchart.slot.1_6_A
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_7_A
+    - ch0_8_A
+    column: 5
     nextSlotIds: []
     isDeath: 0
