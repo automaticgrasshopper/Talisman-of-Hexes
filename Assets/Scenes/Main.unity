@@ -4142,7 +4142,6 @@ MonoBehaviour:
   - {fileID: 68166726}
   entryContent: {fileID: 304120057}
   entryPrefab: {fileID: 1810582284395026388, guid: efb0528305c8a5448929cca0bec24117, type: 3}
-  selectedEntryTitleText: {fileID: 171487395}
   detailImage: {fileID: 926514721}
   detailDescriptionText: {fileID: 775078660}
   detailPanelRoot: {fileID: 1209367368}

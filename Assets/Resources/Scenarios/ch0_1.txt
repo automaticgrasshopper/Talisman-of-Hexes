@@ -13,6 +13,7 @@ box_alignment('center')
 
 据说三年前，有一批访客在<color=#E5C36E>迎宾大厦</color>失踪了，连警察都没有立案。
 <| gallery_unlock('yingbinmansion') |>
+<| play(bgm, 'BGM_AndreChenNervous') |>
 
 <|
 stop_auto_ff()
@@ -48,4 +49,5 @@ box_alignment('center')
 
 走进去还是离开？
 
+<| stop(bgm) |>
 @<| jump_to 'ch0_2' |>

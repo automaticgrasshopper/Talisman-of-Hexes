@@ -154,11 +154,12 @@ namespace Nova
             // 保证 transition 跑完、面板/子物体全部激活后再 Play
             base.Show(doTransition, () =>
             {
-                if (bgmController != null && !string.IsNullOrEmpty(bgmName))
-                {
-                    bgmController.scriptVolume = bgmVolume;
-                    bgmController.Play(bgmName);
-                }
+                // [DISABLED 2026-05-18] 暂时取消章节选择音乐，保留代码方便后续恢复
+                // if (bgmController != null && !string.IsNullOrEmpty(bgmName))
+                // {
+                //     bgmController.scriptVolume = bgmVolume;
+                //     bgmController.Play(bgmName);
+                // }
                 onFinish?.Invoke();
             });
         }

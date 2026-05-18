@@ -128,11 +128,12 @@ namespace Nova
 
         private void PlayBgm()
         {
-            if (bgmController == null || string.IsNullOrEmpty(bgmName)) return;
-            // 取消上一轮 FadeOut，避免它继续把音量拉到 0 然后 Stop
-            if (bgmFadeCo != null) { StopCoroutine(bgmFadeCo); bgmFadeCo = null; }
-            bgmController.scriptVolume = bgmVolume;
-            bgmController.Play(bgmName);
+            // [DISABLED 2026-05-18] 暂时取消流程图音乐，保留代码方便后续恢复
+            // if (bgmController == null || string.IsNullOrEmpty(bgmName)) return;
+            // // 取消上一轮 FadeOut，避免它继续把音量拉到 0 然后 Stop
+            // if (bgmFadeCo != null) { StopCoroutine(bgmFadeCo); bgmFadeCo = null; }
+            // bgmController.scriptVolume = bgmVolume;
+            // bgmController.Play(bgmName);
         }
 
         private void FadeOutBgm()
