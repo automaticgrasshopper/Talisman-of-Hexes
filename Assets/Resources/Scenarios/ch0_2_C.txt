@@ -25,5 +25,5 @@ box_alignment('center')
 "传是埋了一个十几岁的小姑娘。"陈见深看着我，"你们要找的1304，正好压在那个位置上面。"
 
 我后颈又凉了一下。
-<| v_leg_c = 1 |>
+<| gv_leg_c = 1; update_global_save() |>
 @<| jump_to 'ch0_1_1' |>

@@ -40,5 +40,5 @@ box_alignment('center')
 他笑了笑。
 
 "——大部分人，是宁愿信鬼的。"
-<| v_xia_huanglier = 1 |>
+<| gv_xia_huanglier = 1; update_global_save() |>
 @<| jump_to 'ch0_12_A_1' |>

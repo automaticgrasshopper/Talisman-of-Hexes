@@ -45,7 +45,4 @@ play(bgm, 'BGM_AndreChenNervous')
 但那个声音还在背后耐心地重复。
 
 "……左脚还是右脚？"
-@<| branch{
-    {dest='ch0_10_B', text='不开灯，直接走出去'},
-    {dest='ch0_10_C', text='先把走廊灯打开'},
-} |>
+@<| jump_to 'ch0_9_C_1' |>

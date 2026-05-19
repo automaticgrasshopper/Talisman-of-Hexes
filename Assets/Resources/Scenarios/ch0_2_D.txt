@@ -27,5 +27,5 @@ box_alignment('center')
 "所有平台的视频，第二天全删了。但有人备份了。"
 
 周劲松张了张嘴，没发出声音。
-<| v_leg_d = 1 |>
+<| gv_leg_d = 1; update_global_save() |>
 @<| jump_to 'ch0_1_1' |>

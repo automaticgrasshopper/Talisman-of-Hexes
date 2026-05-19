@@ -555,13 +555,9 @@ namespace Nova
                     continue;
                 }
 
-                // 查"是否已选过"：branch 通向的目标节点之前进过没
-                var wasChosen = false;
-                var nextNode = node.GetNext(branchInfo.name);
-                if (nextNode != null)
-                {
-                    wasChosen = checkpointManager.IsReachedAnyHistory(nextNode.name, 0);
-                }
+                // 查"是否已选过"：以本节点 + branch 名为键（即"这个按钮"），
+                // 不再以目标节点是否到访为依据——两个选项指向同一目标时不会误判。
+                var wasChosen = checkpointManager.IsChosenBranch(node.name, branchInfo.name);
 
                 var choice = new ChoiceOccursData.Choice(branchInfo.texts, branchInfo.imageInfo,
                     interactable: branchInfo.mode != BranchMode.Enable || branchInfo.condition.Invoke<bool>(),
@@ -581,7 +577,11 @@ namespace Nova
             ReleaseActionPause();
 
             var index = (int)coroutineHelper.TakeFence();
-            SelectBranch(node, choiceNames[index]);
+            var chosenName = choiceNames[index];
+            // 记录"这个具体按钮被点过"并立刻落盘，下次启动游戏仍保留
+            checkpointManager.SetChosenBranch(node.name, chosenName);
+            checkpointManager.UpdateGlobalSave();
+            SelectBranch(node, chosenName);
         }
 
         private void SelectBranch(FlowChartNode node, string branchName)

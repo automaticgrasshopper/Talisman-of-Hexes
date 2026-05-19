@@ -31,7 +31,4 @@ play(bgm, 'BGM_AndreChenNervous')
 但今晚这单生意，已经退不了。
 
 ——怎么搞？
-@<| branch{
-    {dest='ch0_4_A', text='那我自己去吧'},
-    {dest='ch0_4_B', text='你不想要钱吗？'},
-} |>
+@<| jump_to 'ch0_3_1' |>

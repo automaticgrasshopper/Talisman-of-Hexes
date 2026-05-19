@@ -31,6 +31,7 @@ MonoBehaviour:
     - ch0_2_D
     - ch0_2_E
     - ch0_3
+    - ch0_3_1
     column: 0
     nextSlotIds:
     - 0_2_A
@@ -42,6 +43,7 @@ MonoBehaviour:
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_4_A
+    - ch0_4_A_1
     column: 1
     nextSlotIds:
     - 0_3_A
@@ -53,6 +55,7 @@ MonoBehaviour:
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_4_B
+    - ch0_4_B_1
     column: 1
     nextSlotIds:
     - 0_3_C
@@ -108,6 +111,7 @@ MonoBehaviour:
     - ch0_6_B
     - ch0_7_A
     - ch0_8_A
+    - ch0_8_A_1
     column: 3
     nextSlotIds:
     - 0_5_A
@@ -120,6 +124,7 @@ MonoBehaviour:
     nodeNames:
     - ch0_8_B
     - ch0_9_C
+    - ch0_9_C_1
     column: 3
     nextSlotIds:
     - 0_5_C
@@ -142,6 +147,7 @@ MonoBehaviour:
     - ch0_9_B
     - ch0_10_A
     - ch0_11_A
+    - ch0_11_A_1
     column: 4
     nextSlotIds:
     - 0_6
@@ -178,6 +184,7 @@ MonoBehaviour:
     - ch0_13_B
     - ch0_13_C
     - ch0_13_D
+    - ch0_13_D_1
     column: 5
     nextSlotIds:
     - 0_7
@@ -189,6 +196,7 @@ MonoBehaviour:
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_14
+    - ch0_14_1
     column: 6
     nextSlotIds:
     - 0_8_A

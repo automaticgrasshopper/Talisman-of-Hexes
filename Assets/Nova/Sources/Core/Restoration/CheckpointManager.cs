@@ -789,5 +789,35 @@ namespace Nova
         }
 
         #endregion
+
+        #region Chosen branches
+
+        // 跨档持久化"这个 branch 按钮被点过"的标记。
+        // 键 = 来源节点 + branch 名，避免"两个选项指向同一目标节点 → 误判已选"的 bug。
+        // 复用 globalSave.data 字典，不动 GlobalSave 序列化结构。
+        private const string ChosenBranchKeyPrefix = "__chosen_branch__";
+
+        private static string MakeChosenBranchKey(string nodeName, string branchName)
+        {
+            return ChosenBranchKeyPrefix + nodeName + "\u0001" + branchName;
+        }
+
+        public void SetChosenBranch(string nodeName, string branchName)
+        {
+            var key = MakeChosenBranchKey(nodeName, branchName);
+            if (!globalSave.data.ContainsKey(key))
+            {
+                globalSave.data[key] = true;
+                globalSaveDirty = true;
+            }
+        }
+
+        public bool IsChosenBranch(string nodeName, string branchName)
+        {
+            var key = MakeChosenBranchKey(nodeName, branchName);
+            return globalSave.data.ContainsKey(key);
+        }
+
+        #endregion
     }
 }

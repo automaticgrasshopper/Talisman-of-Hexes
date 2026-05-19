@@ -53,7 +53,4 @@ play(bgm, 'BGM_AndreChenNervous')
 ——但我也没退后。
 
 "走吧。"他笑着说，"我顺道。"
-@<| branch{
-    {dest='ch0_16_A', text='走电梯'},
-    {dest='ch0_12_A', text='走楼梯'},
-} |>
+@<| jump_to 'ch0_11_A_1' |>

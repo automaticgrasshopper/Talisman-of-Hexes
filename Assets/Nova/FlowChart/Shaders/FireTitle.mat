@@ -111,7 +111,7 @@ Material:
     - _EdgeGlowIntensity: 1.07
     - _EdgeGlowSpread: 14.8
     - _EnvironmentReflections: 1
-    - _FireIntensity: 1.841
+    - _FireIntensity: 1.68
     - _FireSpeed: 0.5
     - _GlitchBlockSize: 40.3
     - _GlitchDuration: 0.783
@@ -122,8 +122,8 @@ Material:
     - _GlowIntensity: 2.05
     - _HaloIntensity: 8
     - _HaloSpread: 120
-    - _HeatDistortSpeed: 2.67
-    - _HeatDistortStrength: 0.05
+    - _HeatDistortSpeed: 2.11
+    - _HeatDistortStrength: 0.0388
     - _JitterAmount: 0.0488
     - _JitterSpeed: 13.7
     - _Metallic: 0
@@ -141,8 +141,8 @@ Material:
     - _SmoothnessTextureChannel: 0
     - _SnowAmount: 0.241
     - _SnowSize: 2.32
-    - _SparkAmount: 0.759
-    - _SparkSize: 6.07
+    - _SparkAmount: 0.804
+    - _SparkSize: 1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
@@ -151,10 +151,10 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _Color: {r: 0.7122845, g: 0.8301887, b: 0.26237094, a: 1}
+    - _Color: {r: 0, g: 0, b: 0, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _FireColorInner: {r: 1, g: 0.9, b: 0.3, a: 1}
-    - _FireColorMid: {r: 1, g: 0.7, b: 0.2, a: 1}
-    - _FireColorOuter: {r: 1, g: 0.4, b: 0.1, a: 1}
+    - _FireColorInner: {r: 0.4528302, g: 0.03631186, b: 0.11522971, a: 1}
+    - _FireColorMid: {r: 1, g: 0.32258105, b: 0.19999999, a: 1}
+    - _FireColorOuter: {r: 0.26415092, g: 0.12679222, b: 0.058561757, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []

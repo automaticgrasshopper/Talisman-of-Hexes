@@ -1,0 +1,14 @@
+@<| label('ch0_13_D_1', '我得拿个主意') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_14', text='这家伙不对劲'},
+    {dest='ch0_16_A', text='就是个爱讲楼里旧事的住户'},
+} |>

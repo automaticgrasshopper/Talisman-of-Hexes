@@ -31,7 +31,4 @@ play(bgm, 'BGM_AndreChenNervous')
 他点头如捣蒜。
 
 ——他这是想白拿一半？还是真该让他得点甜头？
-@<| branch{
-    {dest='ch0_5_A', text='行，对半分，你回去吧'},
-    {dest='ch0_5_B', text='我一分钱不分你，你看着办'},
-} |>
+@<| jump_to 'ch0_4_A_1' |>

@@ -41,7 +41,4 @@ play(bgm, 'BGM_AndreChenNervous')
 楼里这种"故事大王"的中年男人，每栋都有几个。
 
 ——这一刻，我得自己拿个主意。
-@<| branch{
-    {dest='ch0_14', text='这家伙不对劲'},
-    {dest='ch0_16_A', text='就是个爱讲楼里旧事的住户'},
-} |>
+@<| jump_to 'ch0_13_D_1' |>

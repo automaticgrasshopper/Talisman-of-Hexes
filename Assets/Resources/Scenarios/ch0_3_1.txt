@@ -1,0 +1,14 @@
+@<| label('ch0_3_1', '怎么搞') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_4_A', text='那我自己去吧'},
+    {dest='ch0_4_B', text='你不想要钱吗？'},
+} |>

@@ -25,5 +25,5 @@ box_alignment('center')
 周劲松低声："哥，咱真要上去？"
 
 我没接话，只是看着大厦的楼顶。
-<| v_leg_b = 1 |>
+<| gv_leg_b = 1; update_global_save() |>
 @<| jump_to 'ch0_1_1' |>

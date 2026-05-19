@@ -1,0 +1,14 @@
+@<| label('ch0_4_B_1', '台阶还是再压') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_5_C', text='这笔钱一人一半，给个甜头'},
+    {dest='ch0_5_D', text='高利贷的事我可以替你说出去'},
+} |>

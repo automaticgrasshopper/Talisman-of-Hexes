@@ -1,14 +1,17 @@
 @<| label('ch0_1_1', '想先听哪段') |>
 <|
-set_box()
-box_alignment('center')
+set_box('hide')
 play(bgm, 'BGM_AndreChenNervous')
 |>
-"想先听哪段？"
+<|
+anim:wait(1)
+immediate_step()
+|>
+
 @<| branch{
     {dest='ch0_2_A', text='1304以前的住户'},
     {dest='ch0_2_B', text='这楼里的"平行时空"'},
     {dest='ch0_2_C', text='打生桩的传说'},
     {dest='ch0_2_D', text='1304的直播自杀'},
-    {dest='ch0_2_E', text='好了我已经了解了', mode='show', cond='v_leg_a == 1 and v_leg_b == 1 and v_leg_c == 1 and v_leg_d == 1'},
+    {dest='ch0_2_E', text='好了我已经了解了', mode='show', cond='gv_leg_a == 1 and gv_leg_b == 1 and gv_leg_c == 1 and gv_leg_d == 1'},
 } |>

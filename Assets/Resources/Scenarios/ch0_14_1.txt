@@ -1,0 +1,15 @@
+@<| label('ch0_14_1', '从哪头切') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_15_A', text='你怎么这么确定那女的是疯癫了'},
+    {dest='ch0_15_B', text='你信不信这楼里真有鬼'},
+    {dest='ch0_15_C', text='录像带没声音，你怎么听见她叫的'},
+} |>

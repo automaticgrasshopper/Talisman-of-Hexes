@@ -1,0 +1,14 @@
+@<| label('ch0_11_A_1', '电梯还是楼梯') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_16_A', text='走电梯'},
+    {dest='ch0_12_A', text='走楼梯'},
+} |>

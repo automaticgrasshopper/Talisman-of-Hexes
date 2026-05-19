@@ -1,0 +1,14 @@
+@<| label('ch0_8_A_1', '干等还是清路') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_9_A', text='搬水泥袋，自己开条路'},
+    {dest='ch0_9_B', text='再等等货梯'},
+} |>

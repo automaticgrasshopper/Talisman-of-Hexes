@@ -1,0 +1,14 @@
+@<| label('ch0_9_C_1', '左脚右脚') |>
+<|
+set_box('hide')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+<|
+anim:wait(1)
+immediate_step()
+|>
+
+@<| branch{
+    {dest='ch0_10_B', text='不开灯，直接走出去'},
+    {dest='ch0_10_C', text='先把走廊灯打开'},
+} |>

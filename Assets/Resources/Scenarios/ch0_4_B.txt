@@ -33,7 +33,4 @@ play(bgm, 'BGM_AndreChenNervous')
 "哥……哥你别这样。"
 
 ——逼他到这一步，是该给个台阶，还是再压一压？
-@<| branch{
-    {dest='ch0_5_C', text='这笔钱一人一半，给个甜头'},
-    {dest='ch0_5_D', text='高利贷的事我可以替你说出去'},
-} |>
+@<| jump_to 'ch0_4_B_1' |>
