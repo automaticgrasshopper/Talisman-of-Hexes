@@ -38,12 +38,23 @@ namespace Nova
         [Header("当前分支金色流光")]
         public Color currentBranchColor = Color.white;
 
+        [Header("转角菱形 marker")]
+        [Tooltip("L 转角处绘制的小菱形大小（px）。0 = 不绘制")]
+        public float junctionSize = 0f;
+
         // ── 运行时 ─────────────────────────────────────────────────────────
         [System.NonSerialized] public Vector2 startPoint;
         [System.NonSerialized] public Vector2 endPoint;
 
+        // 由控制器写入：竖向 riser 的 X 坐标。NaN = 不覆盖，BuildPolyline 自己取中点。
+        // 对前进型边（target.col > source.col）控制器统一设为"目标列正左侧"，
+        // 让进入同一列的所有边共享 riser，自然形成 bundling。
+        [System.NonSerialized] public float midXOverride = float.NaN;
+
         private LineState _state = LineState.Visited;
         private readonly List<Vector2> _poly = new List<Vector2>();
+        // L 折线的两个转角中心（midX, startY) 和 (midX, endY)；OnPopulateMesh 用来画菱形。
+        private readonly List<Vector2> _corners = new List<Vector2>();
 
         /// <summary>
         /// 设置连线端点和状态。
@@ -86,12 +97,20 @@ namespace Nova
                 DrawDashed(vh, col);
             else
                 DrawSolid(vh, col);
+
+            // 在两个 L 转角处叠绘小菱形（state != Locked 时；Locked 视觉是虚线，不加 marker）
+            if (junctionSize > 0f && _state != LineState.Locked && _corners.Count > 0)
+            {
+                foreach (var c in _corners)
+                    DrawDiamond(vh, c, junctionSize, col);
+            }
         }
 
         // ── 路径构建：双弧 L 形 ────────────────────────────────────────────
         private void BuildPolyline()
         {
             _poly.Clear();
+            _corners.Clear();
 
             float dx = endPoint.x - startPoint.x;
             float dy = endPoint.y - startPoint.y;
@@ -103,13 +122,26 @@ namespace Nova
                 return;
             }
 
-            float midX = startPoint.x + dx * 0.5f;
+            // midX：默认走 start/end 中点；midXOverride 有效时用之（列边界 rail，由控制器写入）
+            float midX = !float.IsNaN(midXOverride)
+                ? midXOverride
+                : startPoint.x + dx * 0.5f;
+            // 转角中心（用于绘制 marker）
+            _corners.Add(new Vector2(midX, startPoint.y));
+            _corners.Add(new Vector2(midX, endPoint.y));
+
+            // signX 必须分别按两段算（midX 不一定在 start/end 中点时，两段方向可能不同）
+            // 但对前进型边（rail 落在 start.x 和 end.x 之间）signX 仍一致，沿用旧公式。
             float signX = dx >= 0f ? 1f : -1f;
             float signY = dy >= 0f ? 1f : -1f;
 
+            // 圆角夹紧：两侧水平段长度的较小者 + 垂直段的一半，再减 1px 余量
+            float halfXMin = Mathf.Min(
+                Mathf.Abs(midX - startPoint.x),
+                Mathf.Abs(endPoint.x - midX));
             float r = Mathf.Max(0f, Mathf.Min(
                 cornerRadius,
-                Mathf.Abs(dx) * 0.5f - 1f,
+                halfXMin - 1f,
                 Mathf.Abs(dy) * 0.5f - 1f));
 
             if (r <= 0f)
@@ -219,6 +251,20 @@ namespace Nova
             vh.AddTriangle(b + 1, b + 3, b + 2);
         }
 
+        // 在 center 处画一个边长 size 的小菱形（4 顶点 2 三角面）。
+        // UV 用 (0.5, *) / (*, 0.5) 让 marker 落在 flow shader 的中段，避免边缘条带闪烁。
+        private void DrawDiamond(VertexHelper vh, Vector2 center, float size, Color32 col)
+        {
+            float h = size * 0.5f;
+            int b = vh.currentVertCount;
+            vh.AddVert(MakeVert(center + new Vector2(0f, h),  col, new Vector2(0.5f, 1f)));
+            vh.AddVert(MakeVert(center + new Vector2(h, 0f),  col, new Vector2(1f, 0.5f)));
+            vh.AddVert(MakeVert(center + new Vector2(0f, -h), col, new Vector2(0.5f, 0f)));
+            vh.AddVert(MakeVert(center + new Vector2(-h, 0f), col, new Vector2(0f, 0.5f)));
+            vh.AddTriangle(b,     b + 1, b + 2);
+            vh.AddTriangle(b,     b + 2, b + 3);
+        }
+
         private static UIVertex MakeVert(Vector2 pos, Color32 col, Vector2 uv)
         {
             UIVertex v = UIVertex.simpleVert;
@@ -229,9 +275,24 @@ namespace Nova
         }
 
         // ── 自动撑满 Content ───────────────────────────────────────────────
+        // OnTransformParentChanged 只在父真正"变化"时触发。控制器是先 SetParent 再 AddComponent，
+        // 组件加进来时父没变化 → 事件不会触发 → 第一帧 rect 是默认 100×100，
+        // 网格顶点画在错的位置（要拖一下 ScrollRect 才会触发 UI 重建、走 OnTransformParentChanged）。
+        // 修复：OnEnable 时再撑满一次，覆盖默认 100×100。
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            FillParent();
+        }
+
         protected override void OnTransformParentChanged()
         {
             base.OnTransformParentChanged();
+            FillParent();
+        }
+
+        private void FillParent()
+        {
             if (rectTransform == null) return;
             rectTransform.anchorMin = Vector2.zero;
             rectTransform.anchorMax = Vector2.one;

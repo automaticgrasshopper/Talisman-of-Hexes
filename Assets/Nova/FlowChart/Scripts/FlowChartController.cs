@@ -114,7 +114,10 @@ namespace Nova
 
         public override void Hide(bool doTransition, Action onFinish)
         {
-            FadeOutBgm();
+            // [DISABLED 2026-05-18] 流程图音乐已在 PlayBgm() 里整体注销，
+            // 这里也别再淡出/Stop 共享的 bgmController —— 它和 Title/ChapterSelect 共用，
+            // 退流程图回章节选择时会把上游 BGM 一起停掉。要恢复时同步取消 PlayBgm 的注释即可。
+            // FadeOutBgm();
             base.Hide(doTransition, onFinish);
         }
 
@@ -247,102 +250,34 @@ namespace Nova
         }
 
         // ── 连线生成 ──────────────────────────────────────────────────────
-        // 两遍构建保证渲染层级正确：
-        //   sibling 0 = 最底层，最后 sibling = 最顶层；slot 已先于 BuildLines 创建。
-        //   每次 SetAsFirstSibling 把新线压到底，先建的线会被后建的挤到更高 sibling。
-        //   ⇒ 先建金线（被白线挤下去）、再建白线（沉到最底）
-        //     最终层级（自下而上）：白线 → 金线 → slot，金线永远盖住白线、不会遮 slot。
+        // 列边界 rail 模式：
+        //   所有进入第 col 列的边竖向 riser 都共享 railX(col) = (col - 0.5 - halfMaxColumn) * columnSpacing
+        //   即"目标列的正左侧半个列距"。
+        //   ⇒ 同源多出边：起点处 (source.x, source.y) → (railX, source.y) 这一段视觉上完全重合，
+        //     bundling 成一根 stem；在 railX 上分支分发到各目标。
+        //   ⇒ 同目标多入边：(railX, target.y) → (target.x, target.y) 这一段视觉上完全重合，bundling 成一根入口。
+        //   ⇒ 长边（跨多列）和短边都在同一 railX 拐弯，竖向 riser 彻底对齐。
+        //
+        // 两遍构建保证渲染层级：
+        //   sibling 0 = 最底层；SetAsFirstSibling 把新线压到 sibling 0。
+        //   先建金线（被白线挤上去）、再建白线（沉到最底）
+        //   ⇒ 最终层级（自下而上）：白线 → 金线 → slot。
+        //   ⇒ 共用线段（多边重叠）处金色覆盖白色，符合"金线代表当前分支"语义。
         private void BuildLines(FlowChartChapter chapter, Dictionary<FlowChartSlot, Vector2> positions, int maxReachedColumn)
         {
-            // 锚点：以 slot 中心为基准，对同源/同目标多条边做小步长偏移分散视觉。
-            // 出边偏移按目标 Y 排序、入边偏移按源 Y 排序 —— 避免线交叉。
-            // 由于布局已让 source.Y 落在 target.Y 的中位数上，"指向中位数目标"那条线
-            // 偏移恰好为 0，与目标中心连成纯水平直线。
-            const float anchorStep = 10f;
-
-            var edgeOutY = new Dictionary<(string, string), float>();
-            var edgeInY = new Dictionary<(string, string), float>();
-
-            // 出口偏移：每个源把出边按目标 Y 降序排，给等距偏移
+            int maxColumn = 0;
             foreach (var s in chapter.slots)
-            {
-                if (s == null || s.nextSlotIds == null) continue;
-                var nexts = new List<string>();
-                foreach (var nid in s.nextSlotIds)
-                    if (chapter.GetSlot(nid) != null) nexts.Add(nid);
-                if (nexts.Count == 0) continue;
+                if (s != null && s.column > maxColumn) maxColumn = s.column;
+            float halfMaxColumn = maxColumn * 0.5f;
+            float colSpacing = database.columnSpacing;
 
-                nexts.Sort((a, b) => positions[chapter.GetSlot(b)].y.CompareTo(positions[chapter.GetSlot(a)].y));
-
-                int n = nexts.Count;
-                for (int i = 0; i < n; i++)
-                {
-                    float offset = ((n - 1) * 0.5f - i) * anchorStep;
-                    edgeOutY[(s.slotId, nexts[i])] = positions[s].y + offset;
-                }
-            }
-
-            // 入口偏移：每个目标把入边按源 Y 降序排，给等距偏移
-            var sourcesByTarget = new Dictionary<FlowChartSlot, List<FlowChartSlot>>();
-            foreach (var s in chapter.slots)
-            {
-                if (s == null || s.nextSlotIds == null) continue;
-                foreach (var nid in s.nextSlotIds)
-                {
-                    var t = chapter.GetSlot(nid);
-                    if (t == null) continue;
-                    if (!sourcesByTarget.TryGetValue(t, out var list))
-                    {
-                        list = new List<FlowChartSlot>();
-                        sourcesByTarget[t] = list;
-                    }
-                    list.Add(s);
-                }
-            }
-            foreach (var kv in sourcesByTarget)
-            {
-                var t = kv.Key;
-                var srcs = kv.Value;
-                if (srcs.Count == 0) continue;
-
-                srcs.Sort((a, b) => positions[b].y.CompareTo(positions[a].y));
-
-                int n = srcs.Count;
-                for (int i = 0; i < n; i++)
-                {
-                    float offset = ((n - 1) * 0.5f - i) * anchorStep;
-                    edgeInY[(srcs[i].slotId, t.slotId)] = positions[t].y + offset;
-                }
-            }
-
-            // 同 Y 边强制走中心：source.y == target.y 的边两端都用中心 Y，保证完美水平。
-            // 其他多边的偏移不变，仍然分散。
-            foreach (var s in chapter.slots)
-            {
-                if (s == null || s.nextSlotIds == null) continue;
-                foreach (var nid in s.nextSlotIds)
-                {
-                    var t = chapter.GetSlot(nid);
-                    if (t == null) continue;
-                    if (Mathf.Abs(positions[s].y - positions[t].y) < 0.5f)
-                    {
-                        edgeOutY[(s.slotId, nid)] = positions[s].y;
-                        edgeInY[(s.slotId, nid)] = positions[t].y;
-                    }
-                }
-            }
-
-            // Pass 1: 仅金线（CurrentBranch）
-            EmitLines(chapter, positions, maxReachedColumn, edgeOutY, edgeInY, goldOnly: true);
-            // Pass 2: 仅白线（Visited）。后建被压到 sibling 0，反而把金线挤到上层。
-            EmitLines(chapter, positions, maxReachedColumn, edgeOutY, edgeInY, goldOnly: false);
+            // Pass 1: 仅金线（CurrentBranch）；Pass 2: 仅白线（Visited）。
+            EmitLines(chapter, positions, maxReachedColumn, halfMaxColumn, colSpacing, goldOnly: true);
+            EmitLines(chapter, positions, maxReachedColumn, halfMaxColumn, colSpacing, goldOnly: false);
         }
 
         private void EmitLines(FlowChartChapter chapter, Dictionary<FlowChartSlot, Vector2> positions,
-            int maxReachedColumn,
-            Dictionary<(string, string), float> edgeOutY,
-            Dictionary<(string, string), float> edgeInY,
-            bool goldOnly)
+            int maxReachedColumn, float halfMaxColumn, float colSpacing, bool goldOnly)
         {
             foreach (var slot in chapter.slots)
             {
@@ -351,6 +286,7 @@ namespace Nova
                 {
                     var nextSlot = chapter.GetSlot(nextId);
                     if (nextSlot == null) continue;
+                    if (nextSlot == slot) continue; // self-loop 跳过
                     if (nextSlot.column > maxReachedColumn) continue; // 终点在未到达列
 
                     // 起止状态：任一为 Unknown → 整条线不渲染（"只展示走过的节点和线"）
@@ -365,12 +301,16 @@ namespace Nova
                         ? FlowChartConnectionLine.LineState.CurrentBranch
                         : FlowChartConnectionLine.LineState.Visited;
 
-                    var key = (slot.slotId, nextId);
-                    float outY = edgeOutY.TryGetValue(key, out var oy) ? oy : positions[slot].y;
-                    float inY  = edgeInY.TryGetValue(key, out var iy)  ? iy : positions[nextSlot].y;
+                    // 起止两端用 slot 中心，不再做 anchorStep 偏移
+                    // ——bundling 由共享 railX 自然完成。
+                    Vector2 startPos = positions[slot];
+                    Vector2 endPos   = positions[nextSlot];
 
-                    Vector2 startPos = new Vector2(positions[slot].x, outY);
-                    Vector2 endPos   = new Vector2(positions[nextSlot].x, inY);
+                    // 前进型边（target.col > source.col）用列边界 rail；
+                    // 反向/同列边走默认中点（罕见，无 bundling 需求）。
+                    float railX = (nextSlot.column > slot.column)
+                        ? (nextSlot.column - 0.5f - halfMaxColumn) * colSpacing
+                        : float.NaN;
 
                     var lineGo = new GameObject($"Line_{slot.slotId}->{nextId}");
                     lineGo.transform.SetParent(content, false);
@@ -379,6 +319,8 @@ namespace Nova
                     var line = lineGo.AddComponent<FlowChartConnectionLine>();
                     line.lineWidth = database.lineWidth;
                     line.cornerRadius = database.lineCornerRadius;
+                    line.junctionSize = database.junctionMarkerSize;
+                    line.midXOverride = railX;
                     line.SetLine(
                         startPos,
                         endPos,
@@ -517,6 +459,15 @@ namespace Nova
                     // 冲突 → 均匀分布
                     for (int i = 0; i < count; i++)
                         result[list[i]] = new Vector2(x, (halfCount - i) * rowSpacing);
+                }
+            }
+
+            // 手动 Y 偏移（在 auto layout 之后叠加，正值 = 下沉）
+            foreach (var s in chapter.slots)
+            {
+                if (s.yRowOffset != 0f && result.TryGetValue(s, out var pos))
+                {
+                    result[s] = new Vector2(pos.x, pos.y - s.yRowOffset * rowSpacing);
                 }
             }
 

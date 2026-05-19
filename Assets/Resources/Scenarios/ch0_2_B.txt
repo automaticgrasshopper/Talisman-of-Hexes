@@ -1,0 +1,29 @@
+@<| label('ch0_2_B', '平行时空之谜') |>
+<|
+set_box('hide')
+anim:trans(cam, function()
+    show(bg, 'BG_Test01')
+end, 'fade', 1.0, { _Mask = 'Masks/fade_up' })
+|>
+<|
+set_box()
+box_alignment('center')
+|>
+"听说过<color=#E5C36E>平行时空之谜</color>吗？"陈见深问。
+<| gallery_unlock('parallel_world') |>
+
+我和周劲松对视一眼，都摇头。
+
+"前年，这楼有个外卖员，从一楼坐电梯到22楼送餐——但他出电梯的时候，整栋楼都变样了。"
+
+"墙上的瓷砖、地毯花纹、邻居的门牌……全都对不上。"
+
+"他打了报警电话，警察过来一看：他人没事，但他坐的那台电梯，监控记录显示他根本就没进去。"
+
+"后来他疯了。"
+
+周劲松低声："哥，咱真要上去？"
+
+我没接话，只是看着大厦的楼顶。
+<| v_leg_b = 1 |>
+@<| jump_to 'ch0_1_1' |>

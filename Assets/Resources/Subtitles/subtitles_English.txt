@@ -6,4 +6,7 @@ _subtitle_data['English'] = {
     ['ch0_1.v2'] = {
         {from='00:00:01.000', to='00:00:03.000', text='Demo video subtitle one.'},
     },
+    ['ch0_2_A.v1'] = {
+        {from='00:00:01.000', to='00:00:01.500', text='The Huang Li\'er Incident'},
+    },
 }

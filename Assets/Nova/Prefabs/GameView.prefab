@@ -825,6 +825,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BasicDialogueBox
       objectReference: {fileID: 0}
+    - target: {fileID: 1515438340287766, guid: ba2f88a38a7e341dd95278c30faf99d9, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 114530638897265038, guid: ba2f88a38a7e341dd95278c30faf99d9, type: 3}
       propertyPath: m_Padding.m_Bottom
       value: 120
@@ -1294,7 +1298,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 114698272224023466, guid: ba2f88a38a7e341dd95278c30faf99d9, type: 3}
       propertyPath: dialogueEntryLayoutSetting.preferredHeight
-      value: 180
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 224981068127226408, guid: ba2f88a38a7e341dd95278c30faf99d9, type: 3}
       propertyPath: m_Pivot.x

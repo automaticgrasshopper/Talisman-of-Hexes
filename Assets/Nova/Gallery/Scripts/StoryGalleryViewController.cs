@@ -51,12 +51,13 @@ namespace Nova
             EnsureTabsInit();
             currentCategory = PickDefaultCategory();
             currentSelectedId = null;
-            RefreshTabs();
-            RefreshEntryList();
-            SelectFirstEntryIfAny();
 
             var svc = GalleryService.Instance;
             if (svc != null) svc.onDataChanged += OnGalleryChanged;
+
+            RefreshTabs();
+            RefreshEntryList();
+            ClearDetail();
 
             I18n.LocaleChanged.AddListener(OnLocaleChanged);
         }
@@ -148,7 +149,7 @@ namespace Nova
             currentSelectedId = null;
             RefreshTabs();
             RefreshEntryList();
-            SelectFirstEntryIfAny();
+            ClearDetail();
         }
 
         public void PlayTabHoverSound()
@@ -214,9 +215,10 @@ namespace Nova
             currentSelectedId = view.Entry.id;
             ShowDetail(view.Entry);
             RefreshSelectionVisual();
-            // 标记已读：注意 svc.MarkRead 会触发 onDataChanged → RefreshEntryList。
-            // 但 RefreshEntryList 会重建 view 实例，所以这里 view 在调用 MarkRead 之后失效，
-            // 必须在调 MarkRead 之前把所有需要的数据用本地变量保存好（已用 view.Entry）。
+            // 只标记被点击的那一条已读，其它"new"条目保持未读：
+            // 点一个消除一个，不点就不消除，退出再进来也保留。
+            // MarkRead 会触发 onDataChanged → RefreshEntryList 重建 view 实例，
+            // 所以这里 view 在调用后失效，需要的数据 (view.Entry.id) 已先存进 currentSelectedId。
             if (svc != null) svc.MarkRead(view.Entry.id);
         }
 
@@ -247,28 +249,5 @@ namespace Nova
             RefreshSelectionVisual();
         }
 
-        /// <summary>
-        /// 切 tab / 打开面板时自动选中该页签第一条；空页签则清空详情。
-        /// 不播 click 音效（这是默认行为，不是用户操作）。
-        /// </summary>
-        private void SelectFirstEntryIfAny()
-        {
-            if (spawnedEntries.Count == 0)
-            {
-                ClearDetail();
-                return;
-            }
-            var first = spawnedEntries[0];
-            if (first == null || first.Entry == null)
-            {
-                ClearDetail();
-                return;
-            }
-            currentSelectedId = first.Entry.id;
-            ShowDetail(first.Entry);
-            RefreshSelectionVisual();
-            var svc = GalleryService.Instance;
-            if (svc != null) svc.MarkRead(first.Entry.id);
-        }
     }
 }

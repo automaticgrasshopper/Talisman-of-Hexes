@@ -1,21 +1,58 @@
-@<| label('ch0_6_A', '楼梯探险') |>
+@<| label('ch0_6_A', '安全之夜') |>
+<|
+set_box('hide')
+anim:trans(cam, function()
+    show(bg, 'BG_Test01')
+end, 'fade', 1.5, { _Mask = 'Masks/fade_up' })
+|>
 <|
 set_box()
 box_alignment('center')
 |>
-楼梯井深得不像话，墙皮剥落处隐约能看到上一任住户用粉笔留下的箭头。
+那晚我们没上去。
 
-走到二楼半，应急灯突然全灭了三秒——再亮起时，楼梯口多出了一道影子。
+陈见深在旋转门外站了很久，最后摇了摇头，转身回楼里。
 
-那东西要从我面前掠过去，我必须看准时机出手——只有一次机会。
+我和周劲松走到大马路上，打了一辆出租车，两个人一路没说话。
 
-[stage=before_checkpoint]<|
-minigame(__Nova.uiPrefabLoader, 'MinigameTest')
+车开过去半个夜港，他才长长出了一口气。
+
+"……哥，多亏你今天没犟。"
+
+我没接。
+
+——这单生意黄了，房主第二天换了别家中介。
+
+但没出事。
+
+没出事就是最好的故事。
+
+<|
+set_box('hide')
+anim:trans(cam, function()
+    show(bg, 'BG_Test02')
+end, 'fade', 2.0, { _Mask = 'Masks/fade_up' })
 |>
-胜负已分。
+<|
+set_box()
+box_alignment('center')
+|>
+——七天后。
 
-@<| branch {
-    {dest='ch0_7_A', mode='jump', cond="v_minigame_result == 'success'"},
-    {dest='ch0_7_B', mode='jump', cond="v_minigame_result == 'wrong'"},
-    {dest='ch0_7_C', mode='jump', cond="v_minigame_result == 'timeout'"},
-} |>
+我接到一个奇怪的电话。
+
+对方没说话，只有水声。
+
+挂掉之后，我下楼买烟。
+
+夜港的街道上很安静，一辆送水车从我身后开过来。
+
+——刹车失灵。
+
+我什么都没来得及想。
+
+<| stop(bgm) |>
+——序章·完——
+
+【安全之夜】
+@<| is_end() |>

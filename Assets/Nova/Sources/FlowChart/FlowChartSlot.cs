@@ -25,6 +25,9 @@ namespace Nova
         [Tooltip("下游 slot 的 slotId 列表（用于画连线）")]
         public List<string> nextSlotIds = new List<string>();
 
+        [Tooltip("手动 Y 偏移（以 row 为单位，正值 = 下沉一行，负值 = 上抬一行；可填小数如 0.5）。auto layout 后再叠加。\n用法：长链横向连成一排显得拥挤时，给链上第 N 个 slot 填 N 让它阶梯式下沉。0 = 不偏移。")]
+        public float yRowOffset;
+
         [Tooltip("是否为死亡结局 slot。\n- 视觉：显示 prefab 上的 SlotDeath 特殊图，SlotChoicen / SlotOutside 都不显示\n- 行为：节点 is_end / is_dead 触发后，玩家被送回流程图（停在此 slot）而非主界面\n- 脚本端约定：死亡结局节点写 is_dead() 替代 is_end()（功能完全等同 is_end，只是语义化标注）")]
         public bool isDeath;
     }

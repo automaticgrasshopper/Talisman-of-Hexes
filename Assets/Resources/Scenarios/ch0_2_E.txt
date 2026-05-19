@@ -1,0 +1,23 @@
+@<| label('ch0_2_E', '我已经了解了') |>
+<|
+set_box('hide')
+anim:trans(cam, function()
+    show(bg, 'BG_Test01')
+end, 'fade', 1.0, { _Mask = 'Masks/fade_up' })
+|>
+<|
+set_box()
+box_alignment('center')
+|>
+"好了，我已经了解了。"我打断他。
+
+陈见深停下话头，看了我一眼。
+
+"——干这行听过的怪话也不少。还是先看房要紧。"
+
+周劲松看了我一眼，没敢吭声。
+
+陈见深笑了笑，没继续讲。
+
+"那就上去。"
+@<| jump_to 'ch0_3' |>

@@ -19,10 +19,22 @@ MonoBehaviour:
     titleKey: gallery.message.yingbinmansion.title
     descKey: gallery.message.yingbinmansion.desc
     image: {fileID: 21300000, guid: 18868ddacbb1a0b40813698593377495, type: 3}
-  - id: camera
-    titleKey: gallery.message.camera.title
-    descKey: gallery.message.camera.desc
-    image: {fileID: 21300000, guid: b3900edafd060c94889279047f6b9c32, type: 3}
+  - id: huanglier
+    titleKey: gallery.message.huanglier.title
+    descKey: gallery.message.huanglier.desc
+    image: {fileID: 0}
+  - id: parallel_world
+    titleKey: gallery.message.parallel_world.title
+    descKey: gallery.message.parallel_world.desc
+    image: {fileID: 0}
+  - id: live_pile
+    titleKey: gallery.message.live_pile.title
+    descKey: gallery.message.live_pile.desc
+    image: {fileID: 0}
+  - id: live_suicide
+    titleKey: gallery.message.live_suicide.title
+    descKey: gallery.message.live_suicide.desc
+    image: {fileID: 0}
   items: []
   defaultDetailImage: {fileID: 21300000, guid: 8bf9476de8a3241449553a68094e7943, type: 3}
   tabNormalSprite: {fileID: 21300000, guid: d2d26c3051bb68943acf000ffdcce04f, type: 3}

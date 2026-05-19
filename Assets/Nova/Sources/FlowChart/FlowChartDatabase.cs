@@ -38,6 +38,9 @@ namespace Nova
         [Tooltip("转角圆弧半径，0 = 硬直角折角，>0 为圆角")]
         public float lineCornerRadius = 0f;
 
+        [Tooltip("L 转角处叠绘的菱形 marker 边长（px）。0 = 不绘制；推荐 6–10。")]
+        public float junctionMarkerSize = 8f;
+
         [Header("Slot 交互音效（走 UI 音量）")]
         [Tooltip("鼠标悬停 slot 时播放（可空）")]
         public AudioClip slotHoverSound;

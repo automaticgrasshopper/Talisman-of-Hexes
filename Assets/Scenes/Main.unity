@@ -10586,10 +10586,10 @@ MonoBehaviour:
   unlockAllNodes: 0
   unlockDebugNodes: 0
   flowChartDatabase: {fileID: 11400000, guid: 4449c1872e39eb24ab78ee3e04385b3f, type: 2}
-  bgmController: {fileID: 754503224}
-  bgmName: BGM_Condition
-  bgmVolume: 0.8
-  bgmFadeOutDuration: 0.5
+  bgmController: {fileID: 0}
+  bgmName: 
+  bgmVolume: 0
+  bgmFadeOutDuration: 0
 --- !u!114 &1398760110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11608,7 +11608,7 @@ MonoBehaviour:
   m_Content: {fileID: 304120057}
   m_Horizontal: 1
   m_Vertical: 1
-  m_MovementType: 1
+  m_MovementType: 2
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
@@ -28101,12 +28101,12 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 936786061024272909, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_Type
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 936786061024272909, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 49d36d5ce616a2f4e979befe7c4c1961, type: 3}
+      objectReference: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
     - target: {fileID: 936786061024272910, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0.5
@@ -28129,7 +28129,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 936786061024272910, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 245
+      value: 1080
       objectReference: {fileID: 0}
     - target: {fileID: 936786061024272910, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -28137,7 +28137,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 936786061024272910, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -93
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1148789547436631203, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_SizeDelta.y
@@ -28319,6 +28319,10 @@ PrefabInstance:
       propertyPath: _sectors.Array.data[6].action.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1123056137}
+    - target: {fileID: 2114787029046377390, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
+      propertyPath: m_Spacing
+      value: -60
+      objectReference: {fileID: 0}
     - target: {fileID: 2292503474250039048, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
@@ -28523,6 +28527,10 @@ PrefabInstance:
       propertyPath: mouseEnter
       value: 
       objectReference: {fileID: 8300000, guid: d860052cbbd9fb04bae082c34782a426, type: 3}
+    - target: {fileID: 7407554439087517767, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
+      propertyPath: dialogueEntryLayoutSetting.preferredHeight
+      value: -1
+      objectReference: {fileID: 0}
     - target: {fileID: 7447712414319080502, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_AnchorMax.y
       value: 1
@@ -28625,6 +28633,22 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8469791344066619980, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
       propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8916837232526780201, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
+      propertyPath: m_Spacing
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8916837232526780201, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
+      propertyPath: m_ChildAlignment
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8916837232526780201, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
+      propertyPath: m_ChildControlWidth
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8916837232526780201, guid: 3c27b5526c09db84e89cdd483dd6af66, type: 3}
+      propertyPath: m_ChildForceExpandWidth
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

@@ -22,6 +22,7 @@ MonoBehaviour:
   columnSpacing: 360
   rowSpacing: 240
   lineWidth: 4
-  lineCornerRadius: 0
+  lineCornerRadius: 12
+  junctionMarkerSize: 8
   slotHoverSound: {fileID: 8300000, guid: 9e78e2acebf3edd4d88830bb1c847e4a, type: 3}
   slotClickSound: {fileID: 8300000, guid: d860052cbbd9fb04bae082c34782a426, type: 3}

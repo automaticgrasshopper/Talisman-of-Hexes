@@ -1,53 +1,41 @@
-@<| label('ch0_1', '进入大厦') is_unlocked_start() |>
+@<| label('ch0_1', '初入大厦') is_unlocked_start() |>
 <|
 set_box('hide')
 anim:trans(cam, function()
-    show(bg, 'BG_elevator')
+    show(bg, 'BG_Test01')
 end, 'fade', 1.5, { _Mask = 'Masks/fade_up' })
 |>
 <|
-set_box()
-box_alignment('center')
+set_box('full', 'dark')
 |>
-深夜十一点，这里的灯还亮着。
+深夜十一点，<color=#E5C36E>迎宾大厦</color>的灯还亮着。
 
-据说三年前，有一批访客在<color=#E5C36E>迎宾大厦</color>失踪了，连警察都没有立案。
+我叫江临，做房产中介。
+
+1303号的房主突然急着卖房，价格压得离谱。
+
+同事周劲松不放心，非要跟我一起来。
 <| gallery_unlock('yingbinmansion') |>
 <| play(bgm, 'BGM_AndreChenNervous') |>
 
-<|
-stop_auto_ff()
-input_off()
-set_box('hide')
-video('Videos/titleSurgery')
-video_subtitle_apply('ch0_1', 'v1')
-video_play()
-wait_fence()
-video_hide()
-input_on()
-set_box()
-box_alignment('center')
-|>
+"这地方……要不咱明天白天再来？"周劲松搓着手，眼睛一直瞟向旋转门。
 
-我站在旋转门前，感到一阵说不清楚的寒意。
-
-这里不对劲。
+"哪有客户等中介挑时间的。"我拍拍他肩膀。
 
 <|
-stop_auto_ff()
-input_off()
-set_box('hide')
-video('Videos/demo_video')
-video_subtitle_apply('ch0_1', 'v2')
-video_play()
-wait_fence()
-video_hide()
-input_on()
-set_box()
-box_alignment('center')
+new_page()
 |>
+此时身后有人开口。
 
-走进去还是离开？
+"两位是来看1304的？"
 
-<| stop(bgm) |>
-@<| jump_to 'ch0_2' |>
+我们回头，是一个穿深色风衣的男人，看起来三十出头，眼睛很沉。
+
+"鄙姓陈，陈见深。这栋楼里我住得久，可以陪两位上去。"
+
+周劲松小声："哥，他怎么知道我们看哪间……"
+
+陈见深笑了一下，没接茬。
+
+他抬头望了望大厦："这楼有些故事，先讲给两位听一听。"
+@<| jump_to 'ch0_1_1' |>

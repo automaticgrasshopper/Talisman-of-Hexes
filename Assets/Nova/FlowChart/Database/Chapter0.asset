@@ -11,122 +11,208 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 868e6608e31c44e499ca6b4602107b95, type: 3}
   m_Name: Chapter0
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   chapterNumber: 0
   chapterNameKey: flowchart.chapter.1
-  firstSlotId: 1_1
+  firstSlotId: 0_1
   chapterThumbnail: {fileID: 21300000, guid: 92eabc9c7feb13d4e990cc6e59ada3e4, type: 3}
   backgroundPoster: {fileID: 21300000, guid: ce6c9e7d3a704554da5122e8c28ca20f, type: 3}
   introKey: flowchart.chapter.prologue.intro
   slots:
-  - slotId: 1_1
-    slotNameKey: flowchart.slot.1_1
+  - slotId: 0_1
+    slotNameKey: flowchart.slot.0_1
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_1
-    - ch0_2
+    - ch0_1_1
+    - ch0_2_A
+    - ch0_2_B
+    - ch0_2_C
+    - ch0_2_D
+    - ch0_2_E
+    - ch0_3
     column: 0
     nextSlotIds:
-    - 1_2_A
-    - 1_2_B
-    - 1_2_C
+    - 0_2_A
+    - 0_2_B
+    yRowOffset: 0
     isDeath: 0
-  - slotId: 1_2_A
-    slotNameKey: flowchart.slot.1_2_A
+  - slotId: 0_2_A
+    slotNameKey: flowchart.slot.0_2_A
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
-    - ch0_3_A
+    - ch0_4_A
     column: 1
     nextSlotIds:
-    - 1_3
+    - 0_3_A
+    - 0_3_B
+    yRowOffset: 0
     isDeath: 0
-  - slotId: 1_2_B
-    slotNameKey: flowchart.slot.1_2_B
+  - slotId: 0_2_B
+    slotNameKey: flowchart.slot.0_2_B
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
-    - ch0_3_B
-    column: 1
-    nextSlotIds: []
-    isDeath: 1
-  - slotId: 1_2_C
-    slotNameKey: flowchart.slot.1_2_C
-    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
-    nodeNames:
-    - ch0_3_C
+    - ch0_4_B
     column: 1
     nextSlotIds:
-    - 1_3
+    - 0_3_C
+    - 0_3_D
+    yRowOffset: 0
     isDeath: 0
-  - slotId: 1_3
-    slotNameKey: flowchart.slot.1_3
-    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
-    nodeNames:
-    - ch0_4
-    column: 2
-    nextSlotIds:
-    - 1_4_A
-    - 1_4_B
-    isDeath: 0
-  - slotId: 1_4_A
-    slotNameKey: flowchart.slot.1_4_A
+  - slotId: 0_3_A
+    slotNameKey: flowchart.slot.0_3_A
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_5_A
-    column: 3
-    nextSlotIds:
-    - 1_5_A
-    isDeath: 0
-  - slotId: 1_4_B
-    slotNameKey: flowchart.slot.1_4_B
+    - ch0_6_A
+    column: 2
+    nextSlotIds: []
+    yRowOffset: 0
+    isDeath: 1
+  - slotId: 0_3_B
+    slotNameKey: flowchart.slot.0_3_B
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_5_B
-    column: 3
+    column: 2
     nextSlotIds:
-    - 1_5_B
+    - 0_4_A
+    yRowOffset: 0
     isDeath: 0
-  - slotId: 1_5_A
-    slotNameKey: flowchart.slot.1_5_A
+  - slotId: 0_3_C
+    slotNameKey: flowchart.slot.0_3_C
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
-    - ch0_6_A
-    column: 4
+    - ch0_5_C
+    column: 2
     nextSlotIds:
-    - 1_6_B
-    - 1_6_C
-    - 1_6_A
+    - 0_4_A
+    yRowOffset: 0
     isDeath: 0
-  - slotId: 1_5_B
-    slotNameKey: flowchart.slot.1_5_B
+  - slotId: 0_3_D
+    slotNameKey: flowchart.slot.0_3_D
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_5_D
+    - ch0_6_C
+    - ch0_7_B
+    column: 2
+    nextSlotIds:
+    - 0_4_B
+    yRowOffset: 0
+    isDeath: 0
+  - slotId: 0_4_A
+    slotNameKey: flowchart.slot.0_4_A
     thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
     nodeNames:
     - ch0_6_B
-    column: 4
-    nextSlotIds:
-    - 1_6_A
-    isDeath: 0
-  - slotId: 1_6_B
-    slotNameKey: flowchart.slot.1_6_B
-    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
-    nodeNames:
-    - ch0_7_B
-    column: 5
-    nextSlotIds: []
-    isDeath: 1
-  - slotId: 1_6_C
-    slotNameKey: flowchart.slot.1_6_C
-    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
-    nodeNames:
-    - ch0_7_C
-    column: 5
-    nextSlotIds: []
-    isDeath: 0
-  - slotId: 1_6_A
-    slotNameKey: flowchart.slot.1_6_A
-    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
-    nodeNames:
     - ch0_7_A
     - ch0_8_A
-    column: 5
+    column: 3
+    nextSlotIds:
+    - 0_5_A
+    - 0_5_B
+    yRowOffset: 0
+    isDeath: 0
+  - slotId: 0_4_B
+    slotNameKey: flowchart.slot.0_4_B
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_8_B
+    - ch0_9_C
+    column: 3
+    nextSlotIds:
+    - 0_5_C
+    - 0_5_D
+    yRowOffset: 0
+    isDeath: 0
+  - slotId: 0_5_A
+    slotNameKey: flowchart.slot.0_5_A
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_9_A
+    column: 4
     nextSlotIds: []
+    yRowOffset: 0
+    isDeath: 1
+  - slotId: 0_5_B
+    slotNameKey: flowchart.slot.0_5_B
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_9_B
+    - ch0_10_A
+    - ch0_11_A
+    column: 4
+    nextSlotIds:
+    - 0_6
+    - 0_8_A
+    yRowOffset: -0.3
+    isDeath: 0
+  - slotId: 0_5_C
+    slotNameKey: flowchart.slot.0_5_C
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_10_B
+    column: 4
+    nextSlotIds: []
+    yRowOffset: 0
+    isDeath: 1
+  - slotId: 0_5_D
+    slotNameKey: flowchart.slot.0_5_D
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_10_C
+    - ch0_11_B
+    - ch0_12_B
+    column: 4
+    nextSlotIds: []
+    yRowOffset: 0
+    isDeath: 0
+  - slotId: 0_6
+    slotNameKey: flowchart.slot.0_6
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_12_A
+    - ch0_12_A_1
+    - ch0_13_A
+    - ch0_13_B
+    - ch0_13_C
+    - ch0_13_D
+    column: 5
+    nextSlotIds:
+    - 0_7
+    - 0_8_A
+    yRowOffset: 0.5
+    isDeath: 0
+  - slotId: 0_7
+    slotNameKey: flowchart.slot.0_7
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_14
+    column: 6
+    nextSlotIds:
+    - 0_8_A
+    - 0_8_B
+    yRowOffset: 1
+    isDeath: 0
+  - slotId: 0_8_A
+    slotNameKey: flowchart.slot.0_8_A
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_15_A
+    - ch0_15_B
+    - ch0_16_A
+    column: 7
+    nextSlotIds: []
+    yRowOffset: -0.18
+    isDeath: 1
+  - slotId: 0_8_B
+    slotNameKey: flowchart.slot.0_8_B
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_15_C
+    - ch0_16_B
+    column: 7
+    nextSlotIds: []
+    yRowOffset: -0.265
     isDeath: 0

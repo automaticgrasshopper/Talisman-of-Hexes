@@ -1,0 +1,45 @@
+@<| label('ch0_2_A', '黄丽儿事件') |>
+<|
+set_box('hide')
+anim:trans(cam, function()
+    show(bg, 'BG_Test01')
+end, 'fade', 1.0, { _Mask = 'Masks/fade_up' })
+|>
+<|
+set_box()
+box_alignment('center')
+|>
+陈见深从风衣口袋里掏出手机。
+
+"三年前，1304住的是一个女的，叫<color=#E5C36E>黄丽儿</color>。"
+<| gallery_unlock('huanglier') |>
+
+"有人拍到她最后一次出现在这楼里的画面。"
+
+他把屏幕递到我面前。
+
+"没声音，但你看。"
+
+<|
+stop_auto_ff()
+input_off()
+set_box('hide')
+video('Videos/demo_video')
+video_subtitle_apply('ch0_2_A', 'v1')
+video_play()
+wait_fence()
+video_hide()
+input_on()
+set_box()
+box_alignment('center')
+|>
+
+画面里那个女人对着镜头笑了一下，转身走进了电梯。
+
+之后她就再也没下来。
+
+"警察当年没立案——说她'离家出走'。"陈见深收起手机，"我不信。"
+
+周劲松咽了口口水，没说话。
+<| v_leg_a = 1 |>
+@<| jump_to 'ch0_1_1' |>

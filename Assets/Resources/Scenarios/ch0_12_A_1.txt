@@ -1,0 +1,15 @@
+@<| label('ch0_12_A_1', '从哪头问') |>
+<|
+set_box()
+box_alignment('center')
+play(bgm, 'BGM_AndreChenNervous')
+|>
+我假装看走廊。
+
+——一边在心里盘算，要从哪头问起。
+@<| branch{
+    {dest='ch0_13_A', text='还是走电梯'},
+    {dest='ch0_13_B', text='上锁的理由'},
+    {dest='ch0_13_C', text='举手之劳'},
+    {dest='ch0_13_D', text='天台的案件', mode='show', cond='v_xia_huanglier == 1'},
+} |>

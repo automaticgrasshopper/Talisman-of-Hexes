@@ -213,5 +213,32 @@ namespace Nova
             SaveData(data);
             onDataChanged?.Invoke();
         }
+
+        /// <summary>
+        /// 将一个分类下所有"已解锁但未读"的条目一次性置为已读。
+        /// 用于：玩家点击该分类下任意条目时，把同分类其它"新"条目也消掉，
+        /// 让原本顶置的未读项落回它在 Database 中的自然顺序。仅触发一次 onDataChanged。
+        /// </summary>
+        public void MarkAllReadInCategory(GalleryCategory category)
+        {
+            if (database == null) return;
+            var list = database.GetEntriesOf(category);
+            if (list == null) return;
+            var data = LoadData();
+            bool changed = false;
+            foreach (var e in list)
+            {
+                if (e == null || string.IsNullOrEmpty(e.id)) continue;
+                if (!data.unlockTimes.ContainsKey(e.id)) continue;
+                if (data.readIds.TryGetValue(e.id, out var r) && r) continue;
+                data.readIds[e.id] = true;
+                changed = true;
+            }
+            if (changed)
+            {
+                SaveData(data);
+                onDataChanged?.Invoke();
+            }
+        }
     }
 }
