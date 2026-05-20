@@ -1,0 +1,42 @@
+@<| label('ch0_5_E', '一念之差') |>
+<|
+set_box('hide')
+stop_auto_ff()
+input_off()
+video_set_loop(false)
+video('Videos/demo_video')
+video_play()
+wait_fence()
+video_hide()
+video_to_front()
+input_on()
+anim:trans(cam, function()
+    show(bg, 'BG_Test01')
+end, 'fade', 1.0, { _Mask = 'Masks/fade_up' })
+|>
+<|
+set_box()
+box_alignment('center')
+|>
+我张了张嘴——没说出话。
+
+那点筹码在我喉咙里卡了一下，下不去，也吐不出。
+
+陈见深没等我，也没催我。
+
+他只是把信封轻轻搁回桌面，纸沿正正对着我那一侧。
+
+"……江先生。"他终于开口，声音不冷也不热，"做这一行，犹豫是要付代价的。"
+
+周劲松忽然就笑了一声。
+
+那笑里没有快意，只有一种走投无路的人见到同类落水时的奇怪松弛。
+
+"算了。"他说，"今晚谁也别走了。"
+
+灯，灭了一瞬。
+
+<| v_zhou_fate_changed = 0 |>
+<| sound('sound_coin_drop') |>
+——【BAD END · 你输掉了第一单】——
+@<| is_dead() |>

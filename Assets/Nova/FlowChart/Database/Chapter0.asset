@@ -62,6 +62,7 @@ MonoBehaviour:
     nextSlotIds:
     - 0_3_C
     - 0_3_D
+    - 0_3_E
     yRowOffset: 0
     isDeath: 0
     isChapterEnd: 0
@@ -110,6 +111,16 @@ MonoBehaviour:
     - 0_4_B
     yRowOffset: 0
     isDeath: 0
+    isChapterEnd: 0
+  - slotId: 0_3_E
+    slotNameKey: flowchart.slot.0_3_E
+    thumbnail: {fileID: 21300000, guid: 0d6807cf75694e145811ce12e50720c3, type: 3}
+    nodeNames:
+    - ch0_5_E
+    column: 2
+    nextSlotIds: []
+    yRowOffset: 0
+    isDeath: 1
     isChapterEnd: 0
   - slotId: 0_4_A
     slotNameKey: flowchart.slot.0_4_A

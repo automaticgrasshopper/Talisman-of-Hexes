@@ -86,6 +86,8 @@ MonoBehaviour:
   videoFolder: Videos
   skipButtonPrefab: {fileID: 3444488404729474964, guid: b38dd6ed4f51799479d193ca33adce8c, type: 3}
   subtitlePrefab: {fileID: 2219002269861648289, guid: 2e78fbd8ac9704549bcf813b692d2b79, type: 3}
+  timeSliderPrefab: {fileID: 6491880888937148521, guid: 4b67fc104fc3ece4b84e057a5b16ddf5, type: 3}
+  videoButtonPrefab: {fileID: 6890180199777698033, guid: b83b37c835211504693086c279f40fcd, type: 3}
   volume: 1
 --- !u!114 &-73938223869665634
 MonoBehaviour:

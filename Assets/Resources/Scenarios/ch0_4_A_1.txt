@@ -2,9 +2,17 @@
 <|
 set_box('hide')
 play(bgm, 'BGM_AndreChenNervous')
-|>
-<|
-anim:wait(1)
+stop_auto_ff()
+input_off()
+video_set_loop(false)
+video('Videos/CG_TestBefore')
+video_play()
+wait_fence()
+video_set_loop(true)
+video('Videos/CG_TestTimeCicle5')
+video_play()
+video_choice_mode_on()
+input_on()
 immediate_step()
 |>
 

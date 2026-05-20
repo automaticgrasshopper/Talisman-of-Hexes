@@ -16,6 +16,13 @@ public class Nova_VideoControllerWrap
 		L.RegFunction("Resume", Resume);
 		L.RegFunction("AddSubtitle", AddSubtitle);
 		L.RegFunction("ClearSubtitles", ClearSubtitles);
+		L.RegFunction("SetLoop", SetLoop);
+		L.RegFunction("SetCanvasOrder", SetCanvasOrder);
+		L.RegFunction("ResetCanvasOrder", ResetCanvasOrder);
+		L.RegFunction("StartChoiceTimer", StartChoiceTimer);
+		L.RegFunction("StopChoiceTimer", StopChoiceTimer);
+		L.RegFunction("EnableVideoChoiceMode", EnableVideoChoiceMode);
+		L.RegFunction("DisableVideoChoiceMode", DisableVideoChoiceMode);
 		L.RegFunction("GetRestoreData", GetRestoreData);
 		L.RegFunction("Restore", Restore);
 		L.RegFunction("__eq", op_Equality);
@@ -171,6 +178,123 @@ public class Nova_VideoControllerWrap
 			ToLua.CheckArgsCount(L, 1);
 			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
 			obj.ClearSubtitles();
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int SetLoop(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 2);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			bool arg0 = LuaDLL.luaL_checkboolean(L, 2);
+			obj.SetLoop(arg0);
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int SetCanvasOrder(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 2);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			int arg0 = (int)LuaDLL.luaL_checknumber(L, 2);
+			obj.SetCanvasOrder(arg0);
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int ResetCanvasOrder(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 1);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			obj.ResetCanvasOrder();
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int StartChoiceTimer(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 3);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			double arg0 = (double)LuaDLL.luaL_checknumber(L, 2);
+			int arg1 = (int)LuaDLL.luaL_checknumber(L, 3);
+			obj.StartChoiceTimer(arg0, arg1);
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int StopChoiceTimer(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 1);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			obj.StopChoiceTimer();
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int EnableVideoChoiceMode(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 2);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			int arg0 = (int)LuaDLL.luaL_checknumber(L, 2);
+			obj.EnableVideoChoiceMode(arg0);
+			return 0;
+		}
+		catch (Exception e)
+		{
+			return LuaDLL.toluaL_exception(L, e);
+		}
+	}
+
+	[MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+	static int DisableVideoChoiceMode(IntPtr L)
+	{
+		try
+		{
+			ToLua.CheckArgsCount(L, 1);
+			Nova.VideoController obj = (Nova.VideoController)ToLua.CheckObject<Nova.VideoController>(L, 1);
+			obj.DisableVideoChoiceMode();
 			return 0;
 		}
 		catch (Exception e)

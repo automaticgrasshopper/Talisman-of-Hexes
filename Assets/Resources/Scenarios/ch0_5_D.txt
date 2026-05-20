@@ -1,6 +1,15 @@
 @<| label('ch0_5_D', '高利贷威胁') |>
 <|
 set_box('hide')
+stop_auto_ff()
+input_off()
+video_set_loop(false)
+video('Videos/CG_TestSucceed')
+video_play()
+wait_fence()
+video_hide()
+video_to_front()
+input_on()
 anim:trans(cam, function()
     show(bg, 'BG_Test01')
 end, 'fade', 1.0, { _Mask = 'Masks/fade_up' })

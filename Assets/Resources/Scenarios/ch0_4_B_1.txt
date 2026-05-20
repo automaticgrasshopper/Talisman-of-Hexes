@@ -2,13 +2,23 @@
 <|
 set_box('hide')
 play(bgm, 'BGM_AndreChenNervous')
-|>
-<|
-anim:wait(1)
+stop_auto_ff()
+input_off()
+video_set_loop(false)
+video('Videos/CG_TestBefore')
+video_play()
+wait_fence()
+video_set_loop(true)
+video('Videos/CG_TestTimeLimit5')
+video_play()
+video_choice_mode_on(2)
+start_choice_timer(5, 2)
+input_on()
 immediate_step()
 |>
 
 @<| branch{
     {dest='ch0_5_C', text='这笔钱一人一半，给个甜头'},
     {dest='ch0_5_D', text='高利贷的事我可以替你说出去'},
+    {dest='ch0_5_E', text='[超时]'},
 } |>
