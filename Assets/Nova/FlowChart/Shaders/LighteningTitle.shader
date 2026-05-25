@@ -5,14 +5,14 @@ Shader "UI/LighteningTitle"
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
 
-        // 蒸汽扭曲参数（全局热浪）
-        _SteamStrength ("蒸汽扭曲强度", Range(0, 0.05)) = 0.02
-        _SteamSpeed ("蒸汽扭曲速度", Range(0.5, 3)) = 1.2
+        // 呼吸缩放（从脚底锚定，垂直微动）
+        _BreathAmount ("呼吸幅度", Range(0, 0.02)) = 0.005
+        _BreathSpeed  ("呼吸速度", Range(0.2, 3)) = 1.2
 
-        // 白烟参数（右上角弥漫）
-        _SmokeIntensity ("白烟强度", Range(0, 0.8)) = 0.4
-        _SmokeScale ("白烟噪声尺度", Range(1, 10)) = 3.0
-        _SmokeSpeed ("白烟流动速度", Range(0.2, 2)) = 0.8
+        // 边缘烟丝（fbm 噪声 UV warp，向上飘）
+        _WispStrength ("烟丝强度", Range(0, 0.05)) = 0.015
+        _WispScale    ("烟丝噪声尺度", Range(1, 20)) = 8.0
+        _WispSpeed    ("烟丝飘动速度", Range(0.05, 2)) = 0.35
     }
 
     SubShader
@@ -55,30 +55,41 @@ Shader "UI/LighteningTitle"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             fixed4 _Color;
-            float _SteamStrength;
-            float _SteamSpeed;
-            float _SmokeIntensity;
-            float _SmokeScale;
-            float _SmokeSpeed;
+            float _BreathAmount;
+            float _BreathSpeed;
+            float _WispStrength;
+            float _WispScale;
+            float _WispSpeed;
 
-            // 简单的噪声函数
-            float noise(float2 p)
+            float hash(float2 p)
             {
                 return frac(sin(dot(p, float2(127.1, 311.7))) * 43758.5453);
             }
 
-            float fbm(float2 p, int octaves)
+            // 值噪声（带双线性插值），比纯 hash 更柔和
+            float vnoise(float2 p)
             {
-                float value = 0.0;
-                float amplitude = 0.5;
-                float frequency = 1.0;
-                for (int i = 0; i < octaves; i++)
+                float2 i = floor(p);
+                float2 f = frac(p);
+                float a = hash(i);
+                float b = hash(i + float2(1, 0));
+                float c = hash(i + float2(0, 1));
+                float d = hash(i + float2(1, 1));
+                float2 u = f * f * (3.0 - 2.0 * f);
+                return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
+            }
+
+            float fbm(float2 p)
+            {
+                float v = 0.0;
+                float amp = 0.5;
+                for (int k = 0; k < 3; k++)
                 {
-                    value += amplitude * noise(p * frequency);
-                    amplitude *= 0.5;
-                    frequency *= 2.0;
+                    v += amp * vnoise(p);
+                    p *= 2.0;
+                    amp *= 0.5;
                 }
-                return value;
+                return v;
             }
 
             v2f vert(appdata_t v)
@@ -92,56 +103,34 @@ Shader "UI/LighteningTitle"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                // 原始采样
-                fixed4 original = tex2D(_MainTex, i.texcoord);
-                fixed4 texColor = original * i.color;
-                float alpha = texColor.a;
-                if (alpha < 0.01) discard;
-
-                // ========== 蒸汽氤氲效果 (全局扭曲) ==========
-                float2 steamUV = i.texcoord;
-                float timeSteam = _Time.y * _SteamSpeed;
-                steamUV.x += sin(i.texcoord.y * 40 + timeSteam) * _SteamStrength;
-                steamUV.y += cos(i.texcoord.x * 35 + timeSteam * 1.2) * _SteamStrength;
-                fixed4 steamedTex = tex2D(_MainTex, steamUV) * i.color;
-                texColor = lerp(texColor, steamedTex, 0.35);
-
-                // ========== 紫色雾气 (全局氛围) ==========
-                float fogFactor = 0.2 * (sin(i.texcoord.x * 20 + _Time.y * 0.8) * 0.5 + 0.5)
-                                * (cos(i.texcoord.y * 25 + _Time.y * 0.6) * 0.5 + 0.5);
-                fixed4 fogColor = fixed4(0.6, 0.4, 0.8, 0.15);
-                texColor = lerp(texColor, fogColor, fogFactor * 0.6);
-
-                // ========== 右上角白烟弥漫 ==========
-                // 只影响右上角区域 (x>0.55, y>0.55)，向四周渐隐
                 float2 uv = i.texcoord;
-                float cornerMask = 1.0;
-                if (uv.x < 0.55 || uv.y < 0.55)
-                {
-                    // 离右上角越远，白烟越弱
-                    float dist = max(0.55 - uv.x, 0.55 - uv.y);
-                    cornerMask = 1.0 - smoothstep(0.0, 0.3, dist);
-                }
-                if (cornerMask > 0.01)
-                {
-                    // 动态白烟：使用分形噪声生成飘移纹理
-                    float2 smokeUV = uv * _SmokeScale;
-                    smokeUV.x += _Time.y * _SmokeSpeed;
-                    smokeUV.y -= _Time.y * _SmokeSpeed * 0.7;
-                    
-                    float smoke1 = fbm(smokeUV, 3);
-                    float smoke2 = fbm(smokeUV * 2.5 + float2(0.5, 0.2), 2);
-                    float smoke = (smoke1 * 0.7 + smoke2 * 0.3) * cornerMask;
-                    // 让烟更柔和，呈白色
-                    smoke = pow(smoke, 1.5) * _SmokeIntensity;
-                    
-                    fixed4 smokeColor = fixed4(0.95, 0.95, 1.0, smoke);
-                    texColor = texColor + smokeColor * smoke;
-                }
 
-                fixed4 final = texColor;
-                final.a = alpha;
-                return final;
+                // ===== 1. 呼吸缩放（从脚底 uv.y=0 锚定）=====
+                // breath > 1：略拉高；< 1：略压缩。脚底锁住，头顶/发梢动得最多。
+                float breath = 1.0 + sin(_Time.y * _BreathSpeed) * _BreathAmount;
+                uv.y = uv.y / breath;
+
+                // ===== 2. 边缘烟丝（噪声向上飘）=====
+                // 噪声坐标随时间向 -y 方向移动 → 视觉上图案"向上漂"
+                float2 noiseUV = uv * _WispScale + float2(_Time.y * _WispSpeed * 0.2,
+                                                          -_Time.y * _WispSpeed);
+                float n = fbm(noiseUV);
+
+                // 仅向下取样（n >= 0），制造"轮廓向上延伸"的烟丝感
+                // 头顶 / 肩膀 / 裙摆下沿等边缘处，透明像素会偶尔采到下方实体 → 像烟
+                // 实体内部因为颜色均匀，几乎察觉不到位移
+                float2 warpUV = uv;
+                warpUV.y -= n * _WispStrength;
+                // 横向给极弱的扰动，让烟丝不至于呆板地纯垂直
+                warpUV.x += (n - 0.5) * _WispStrength * 0.3;
+
+                // ===== 3. 采样（颜色完全来自原图，没有任何色调注入）=====
+                fixed4 col = tex2D(_MainTex, warpUV) * i.color;
+
+                // 极低 alpha 直接 discard，保边缘干净
+                if (col.a < 0.01) discard;
+
+                return col;
             }
             ENDCG
         }
